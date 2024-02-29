@@ -79,21 +79,33 @@ exports.get = function (req, res) {
 
 // Handle list client by username
 exports.getByCarPlate = function (req, res) {
-  Car.find({ plate: String(req.params.plate).toUpperCase() })
+  if (!req.params.plate.length) {
+    return res.status(400).send({ message: "Input error" });
+  }
+  const plate = req.params.plate.toUpperCase();
+  Car.find({ plate: plate })
     .then((cars) => {
       if (!cars.length)
         return res.status(404).send({ message: "Car not found" });
+
+      let responseSent = false;
+
       cars[0].clients.forEach((client_id) => {
         if (String(client_id) === req.body.client_id) {
-          return res.status(200).json({
+          responseSent = true;
+          return res.status(200).send({
             message: "Car by car plate loading...",
             results: cars[0],
           });
         }
       });
-      return res.status(403).json({
-        message: "Unable to get car",
-      });
+
+      // Check if a response has already been sent
+      if (!responseSent) {
+        return res.status(403).json({
+          message: "Unable to get car",
+        });
+      }
     })
     .catch((err) => {
       return res.status(500).send({ message: err });
