@@ -10,6 +10,8 @@ module.exports = function (app) {
     next();
   });
   app.get("/api/cars", [authJwt.verifyToken], controller.index);
+  app.get("/api/car/plate/:plate", controller.getByCarPlate);
+
   app.post(
     "/api/car/register",
     [verifyRegister.checkCarPlateOrVin],

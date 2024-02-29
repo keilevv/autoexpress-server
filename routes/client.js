@@ -27,6 +27,17 @@ module.exports = function (app) {
     controller.delete
   );
   app.get(
+    "/api/client/:client_id",
+    [authJwt.verifyToken, authJwt.isModerator],
+    controller.get
+  );
+  app.get(
+    "/api/client/country-id/:country_id",
+    [verifyRegister.checkCountryIdOrTelephoneNumber],
+    controller.getByContryId
+  );
+
+  app.get(
     "/api/client",
     [authJwt.verifyToken, authJwt.isModerator],
     controller.get

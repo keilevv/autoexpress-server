@@ -25,7 +25,6 @@ exports.register = async (req, res) => {
   if (!helpers.commonRegex.email.test(req.body.email)) {
     return res.status(400).json({ error: "Invalid email format." });
   }
-  console.log("formatted", formattedBirthday)
   try {
     const client = await new Client({
       name: req.body.name,
@@ -80,14 +79,20 @@ exports.index = function (req, res) {
 };
 
 // Handle view client client
+// Handle list client by username
+// Handle list client by username
 exports.get = function (req, res) {
-  Client.findById(req.params.user_id, function (err, client) {
-    if (err) res.send(err);
-    res.json({
-      message: "Client details loading..",
-      results: client,
+  Client.findById(req.params.client_id)
+    .then((client) => {
+      if (!client) return res.status(404).send({ message: "Client not found" });
+      return res.json({
+        message: "Client by id loading...",
+        results: client,
+      });
+    })
+    .catch((err) => {
+      return res.status(500).send({ message: err });
     });
-  });
 };
 
 // Handle list client by username
@@ -100,6 +105,23 @@ exports.getByName = function (req, res) {
     });
   });
 };
+
+// Handle list client by username
+exports.getByContryId = function (req, res) {
+  Client.find({ country_id: req.params.country_id })
+    .then((clients) => {
+      if (!clients.length)
+        return res.status(404).send({ message: "Client not found" });
+      return res.json({
+        message: "Client by country_id loading...",
+        results: clients[0],
+      });
+    })
+    .catch((err) => {
+      return res.status(500).send({ message: err });
+    });
+};
+
 // Handle update client client
 // Handle update car from id
 exports.update = function (req, res) {

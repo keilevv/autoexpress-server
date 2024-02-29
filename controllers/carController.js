@@ -77,6 +77,29 @@ exports.get = function (req, res) {
   });
 };
 
+// Handle list client by username
+exports.getByCarPlate = function (req, res) {
+  Car.find({ plate: String(req.params.plate).toUpperCase() })
+    .then((cars) => {
+      if (!cars.length)
+        return res.status(404).send({ message: "Car not found" });
+      cars[0].clients.forEach((client_id) => {
+        if (String(client_id) === req.body.client_id) {
+          return res.status(200).json({
+            message: "Car by car plate loading...",
+            results: cars[0],
+          });
+        }
+      });
+      return res.status(403).json({
+        message: "Unable to get car",
+      });
+    })
+    .catch((err) => {
+      return res.status(500).send({ message: err });
+    });
+};
+
 // Handle update car from id
 exports.update = function (req, res) {
   Car.findById(req.params.car_id)
