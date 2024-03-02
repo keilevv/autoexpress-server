@@ -18,7 +18,6 @@ module.exports = function (app) {
   );
   app.put(
     "/api/client/update/:client_id",
-    [authJwt.verifyToken],
     controller.update
   );
   app.delete(
