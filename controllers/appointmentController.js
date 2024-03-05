@@ -32,6 +32,9 @@ exports.register = async (req, res) => {
       user: { $in: operatorUsers.map((user) => user._id) },
     });
 
+    let availableUserId = operatorUsers[0]
+      ? operatorUsers[0]._id
+      : req.body.user;
     if (busyUsers.length > 0) {
       // Find an available user with the specified role for that time
       const availableUser = operatorUsers.find(
@@ -45,13 +48,14 @@ exports.register = async (req, res) => {
       }
 
       // Assign the available user
+      availableUserId = availableUser._id;
       req.body.user = availableUser._id;
     }
 
     const appointment = new Appointment({
       date: formattedDate,
       time: formattedTime,
-      user: req.body.user,
+      user: availableUserId,
       client: req.body.client,
       car: req.body.car,
     });
@@ -84,8 +88,8 @@ exports.index = function (req, res) {
       return res.json({
         status: "success",
         message: "Appointments list retrieved successfully",
-        results: cursor,
         count: cursor.length,
+        results: cursor,
       });
     });
   });
