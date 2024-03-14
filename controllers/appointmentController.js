@@ -1,6 +1,7 @@
 // clientController.js
 // Import Models
 const Appointment = require("../models/appointmentModel");
+const User = require("../models/userModel");
 const moment = require("moment");
 const { appointmentProjection } = require("./aggregations");
 
@@ -31,6 +32,9 @@ exports.register = async (req, res) => {
       user: { $in: operatorUsers.map((user) => user._id) },
     });
 
+    let availableUserId = operatorUsers[0]
+      ? operatorUsers[0]._id
+      : req.body.user;
     if (busyUsers.length > 0) {
       // Find an available user with the specified role for that time
       const availableUser = operatorUsers.find(
@@ -44,24 +48,32 @@ exports.register = async (req, res) => {
       }
 
       // Assign the available user
+      availableUserId = availableUser._id;
       req.body.user = availableUser._id;
     }
 
     const appointment = new Appointment({
       date: formattedDate,
       time: formattedTime,
-      user: req.body.user,
+      user: availableUserId,
       client: req.body.client,
       car: req.body.car,
     });
 
-    await appointment.save();
+    let savedAppointment = {};
+    await appointment.save().then((appointment) => {
+      savedAppointment = appointment;
+    });
 
     const cursor = await Appointment.aggregate(appointmentProjection);
 
-    return res.send({
-      message: "Appointment was registered successfully!",
-      results: cursor,
+    cursor.forEach((appointment) => {
+      if (appointment._id.equals(savedAppointment._id)) {
+        return res.send({
+          message: "Appointment was registered successfully!",
+          results: appointment,
+        });
+      }
     });
   } catch (error) {
     console.error(error);
@@ -76,8 +88,8 @@ exports.index = function (req, res) {
       return res.json({
         status: "success",
         message: "Appointments list retrieved successfully",
-        results: cursor,
         count: cursor.length,
+        results: cursor,
       });
     });
   });
@@ -155,6 +167,51 @@ exports.delete = function (req, res) {
     });
 };
 
+exports.getUnavailableTimes = function (req, res) {
+  const date = req.body.date;
+
+  // Step 1: Fetch operator users
+  User.find({ roles: "operator" })
+    .then((users) => {
+      // Step 2: Create a function to find overlapping appointments for each operator
+      const findOverlappingAppointments = (userId) => {
+        return appointments.filter(
+          (appointment) => appointment.user.toString() === userId.toString()
+        );
+      };
+
+      // Step 3: Find the common unavailable times when all operators are busy
+      const promises = users.map((user) => {
+        return Appointment.find({ date, user: user._id });
+      });
+
+      return Promise.all(promises).then((results) => {
+        let commonUnavailableTimes = [];
+
+        if (results.length > 0) {
+          commonUnavailableTimes = results[0].map(
+            (appointment) => appointment.time
+          );
+
+          for (let i = 1; i < results.length; i++) {
+            commonUnavailableTimes = commonUnavailableTimes.filter((time) =>
+              results[i].some((app) => app.time === time)
+            );
+          }
+        }
+
+        // Step 4: Return the response with the unavailable times
+        return res.status(200).json({
+          message: "Unavailable times",
+          results: commonUnavailableTimes,
+        });
+      });
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+      return res.status(500).json({ message: "Internal Server Error", error });
+    });
+};
 // Handle delete appointment
 exports.deleteAll = function (req, res) {
   Appointment.deleteMany({})

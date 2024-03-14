@@ -30,7 +30,7 @@ exports.appointmentProjection = [
     },
   },
   {
-    $unwind: "$user",
+    $unwind: "$car",
   },
   {
     $project: {

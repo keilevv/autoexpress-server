@@ -10,6 +10,7 @@ module.exports = function (app) {
     next();
   });
   app.get("/api/appointments", [authJwt.verifyToken], controller.index);
+  app.post("/api/appointments/check/", controller.getUnavailableTimes);
   app.post("/api/appointment/register", controller.register);
   app.delete("/api/appointment/delete/:appointment_id", controller.delete);
   app.put("/api/appointment/update/:appointment_id", controller.update);
