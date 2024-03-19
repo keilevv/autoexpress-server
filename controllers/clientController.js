@@ -78,9 +78,7 @@ exports.index = function (req, res) {
   });
 };
 
-// Handle view client client
-// Handle list client by username
-// Handle list client by username
+// Handle view client info
 exports.get = function (req, res) {
   Client.findById(req.params.client_id)
     .then((client) => {
@@ -104,6 +102,43 @@ exports.getByName = function (req, res) {
       results: client,
     });
   });
+};
+
+exports.getClientListByName = function (req, res) {
+  if (!req.params.full_name) {
+    return res.status(400).send({ message: "Input error" });
+  }
+
+  const full_name = req.params.full_name.toUpperCase();
+  const regex = new RegExp(full_name);
+
+  Client.aggregate([
+    {
+      $match: {
+        name: { $regex: regex },
+        surname: { $regex: regex },
+        lastname: { $regex: regex },
+      },
+    },
+    {
+      $lookup: {
+        from: "cars",
+        localField: "cars",
+        foreignField: "_id",
+        as: "cars",
+      },
+    },
+  ])
+    .then((cursor) => {
+      return res.json({
+        status: "success",
+        message: "Cars list retrieved successfully",
+        results: cursor,
+      });
+    })
+    .catch((err) => {
+      return res.status(500).send({ message: err });
+    });
 };
 
 // Handle list client by username

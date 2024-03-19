@@ -102,29 +102,33 @@ exports.getByCarPlate = function (req, res) {
 };
 
 exports.getCarListByPlate = function (req, res) {
-  if (!req.params.plate.length) {
+  if (!req.params.plate) {
     return res.status(400).send({ message: "Input error" });
   }
-  const plate = req.params.plate.toUpperCase();
-  const regex = new RegExp(plate, "i"); // "i" flag for case-insensitive search
 
-  Car.find({ plate: { $regex: regex } })
-    .then((cars) => {
-      Car.aggregate([
-        {
-          $lookup: {
-            from: "clients",
-            localField: "clients",
-            foreignField: "_id",
-            as: "clients",
-          },
-        },
-      ]).then((cursor) => {
-        return res.json({
-          status: "success",
-          message: "Cars list retrieved successfully",
-          results: cursor,
-        });
+  const plate = req.params.plate.toUpperCase();
+  const regex = new RegExp(plate);
+
+  Car.aggregate([
+    {
+      $match: {
+        plate: { $regex: regex },
+      },
+    },
+    {
+      $lookup: {
+        from: "clients",
+        localField: "clients",
+        foreignField: "_id",
+        as: "clients",
+      },
+    },
+  ])
+    .then((cursor) => {
+      return res.json({
+        status: "success",
+        message: "Cars list retrieved successfully",
+        results: cursor,
       });
     })
     .catch((err) => {

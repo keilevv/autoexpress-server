@@ -10,16 +10,19 @@ module.exports = function (app) {
     next();
   });
 
-  app.get("/api/clients", [authJwt.verifyToken], controller.index);
+  app.get("/api/operations/clients", [authJwt.verifyToken], controller.index);
+  app.get(
+    "/api/operations/clients/name/:full_name",
+    [authJwt.verifyToken],
+    controller.getClientListByName
+  );
+
   app.post(
     "/api/client/register",
     [verifyRegister.checkCountryIdOrTelephoneNumber],
     controller.register
   );
-  app.put(
-    "/api/client/update/:client_id",
-    controller.update
-  );
+  app.put("/api/client/update/:client_id", controller.update);
   app.delete(
     "/api/client/delete/:client_id",
     [authJwt.verifyToken],
