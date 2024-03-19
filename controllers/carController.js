@@ -66,17 +66,6 @@ exports.index = function (req, res) {
   });
 };
 
-// Handle view user user
-exports.get = function (req, res) {
-  User.findById(req.params.user_id, function (err, user) {
-    if (err) res.send(err);
-    res.json({
-      message: "Client details loading..",
-      results: user,
-    });
-  });
-};
-
 // Handle list client by username
 exports.getByCarPlate = function (req, res) {
   if (!req.params.plate.length) {
@@ -106,6 +95,37 @@ exports.getByCarPlate = function (req, res) {
           message: "Unable to get car",
         });
       }
+    })
+    .catch((err) => {
+      return res.status(500).send({ message: err });
+    });
+};
+
+exports.getCarListByPlate = function (req, res) {
+  if (!req.params.plate.length) {
+    return res.status(400).send({ message: "Input error" });
+  }
+  const plate = req.params.plate.toUpperCase();
+  const regex = new RegExp(plate, "i"); // "i" flag for case-insensitive search
+
+  Car.find({ plate: { $regex: regex } })
+    .then((cars) => {
+      Car.aggregate([
+        {
+          $lookup: {
+            from: "clients",
+            localField: "clients",
+            foreignField: "_id",
+            as: "clients",
+          },
+        },
+      ]).then((cursor) => {
+        return res.json({
+          status: "success",
+          message: "Cars list retrieved successfully",
+          results: cursor,
+        });
+      });
     })
     .catch((err) => {
       return res.status(500).send({ message: err });

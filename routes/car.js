@@ -9,8 +9,13 @@ module.exports = function (app) {
     );
     next();
   });
-  app.get("/api/cars", [authJwt.verifyToken], controller.index);
+  app.get("/api/admin/cars", [authJwt.verifyToken], controller.index);
   app.post("/api/car/plate/:plate", controller.getByCarPlate);
+  app.get(
+    "/api/admin/cars/plate/:plate",
+    [authJwt.verifyToken],
+    controller.getCarListByPlate
+  );
 
   app.post(
     "/api/car/register",
