@@ -72,6 +72,7 @@ exports.index = function (req, res) {
       return res.json({
         status: "success",
         message: "Clients list retrieved successfully",
+        count: cursor.length,
         results: cursor,
       });
     });
@@ -133,6 +134,7 @@ exports.getClientListByName = function (req, res) {
       return res.json({
         status: "success",
         message: "Cars list retrieved successfully",
+        count: cursor.length,
         results: cursor,
       });
     })
@@ -201,6 +203,21 @@ exports.delete = function (req, res) {
         });
       }
       return res.status(400).send({ message: "Client not found!" });
+    })
+    .catch((err) => {
+      if (err) res.status(500).send({ message: err });
+    });
+};
+
+/* WARNING: This will delete all appointments, use only on dev environment */
+exports.deleteAll = function (req, res) {
+  Client.deleteMany({})
+    .then(() => {
+      res.json({
+        status: "success",
+        message:
+          "All clients deleted, prepare yourself, I'm going to kill you.",
+      });
     })
     .catch((err) => {
       if (err) res.status(500).send({ message: err });

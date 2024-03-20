@@ -28,6 +28,12 @@ module.exports = function (app) {
     [authJwt.verifyToken],
     controller.delete
   );
+  /*WARNING: This will delete all appointments, use only on dev environment */
+  app.delete(
+    "/api/clients/delete-all",
+    [authJwt.verifyToken],
+    controller.deleteAll
+  );
   app.get(
     "/api/client/:client_id",
     [authJwt.verifyToken, authJwt.isModerator],

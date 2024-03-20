@@ -14,5 +14,9 @@ module.exports = function (app) {
   app.post("/api/appointment/register", controller.register);
   app.delete("/api/appointment/delete/:appointment_id", controller.delete);
   app.put("/api/appointment/update/:appointment_id", controller.update);
-  app.delete("/api/appointment/delete-all", controller.deleteAll);
+  app.delete(
+    "/api/appointments/delete-all",
+    [authJwt.verifyToken],
+    controller.deleteAll
+  );
 };
