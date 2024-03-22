@@ -2,14 +2,14 @@
 // Import Models
 Car = require("../models/carModel");
 Client = require("../models/clientModel");
-const helpers = require("../utils/helpers");
+const regex = require("../utils/regex");
 const aggregations = require("./aggregations");
 
 exports.register = (req, res) => {
-  if (!helpers.commonRegex.vin.test(req.body.vin)) {
+  if (!regex.commonRegex.vin.test(req.body.vin)) {
     return res.status(400).json({ error: "Invalid vin format." });
   }
-  if (!helpers.commonRegex.carPlate.test(req.body.plate)) {
+  if (!regex.commonRegex.carPlate.test(req.body.plate)) {
     return res.status(400).json({ error: "Invalid car plate format." });
   }
 
@@ -54,9 +54,10 @@ exports.index = async function (req, res) {
 
     // Apply filtering if any
     if (filter) {
-      query["client.name"] = { $regex: filter, $options: "i" };
+      filterArray.forEach((filter) => {
+        query[filter.name] = { $regex: filter.value, $options: "i" };
+      });
     }
-
     // Apply sorting if any
     let sortOptions = {};
     if (sortBy && sortOrder) {
@@ -73,11 +74,15 @@ exports.index = async function (req, res) {
         { $skip: (page - 1) * limit },
         { $limit: parseInt(limit) },
       ].concat(aggregations.carProjection)
-    );
+    ).catch((err) => {
+      return res
+        .status(500)
+        .json({ message: "Internal server error", description: err });
+    });
 
     return res.json({
       status: "success",
-      message: "Appointments list retrieved successfully",
+      message: "Cars list retrieved successfully",
       count: cars.length,
       total: totalCars,
       results: cars,

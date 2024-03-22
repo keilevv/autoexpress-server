@@ -111,7 +111,11 @@ exports.index = async function (req, res) {
       { $sort: sortOptions },
       { $skip: (page - 1) * limit },
       { $limit: parseInt(limit) },
-    ]);
+    ]).catch((err) => {
+      return res
+        .status(500)
+        .json({ message: "Internal server error", description: err });
+    });
 
     return res.json({
       status: "success",

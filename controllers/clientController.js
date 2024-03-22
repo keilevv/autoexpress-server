@@ -3,8 +3,9 @@
 const moment = require("moment");
 Car = require("../models/carModel");
 Client = require("../models/clientModel");
-const helpers = require("../utils/helpers");
+const regex = require("../utils/regex");
 const aggregations = require("./aggregations");
+const { helpers } = require("../utils/helpers");
 
 exports.register = async (req, res) => {
   const formattedBirthday = moment(
@@ -19,11 +20,11 @@ exports.register = async (req, res) => {
     return res.status(400).json({ error: "Invalid birthday format." });
   }
 
-  if (!helpers.commonRegex.country_id.test(req.body.country_id)) {
+  if (!regex.commonRegex.country_id.test(req.body.country_id)) {
     return res.status(400).json({ error: "Invalid country_id format." });
   }
 
-  if (!helpers.commonRegex.email.test(req.body.email)) {
+  if (!regex.commonRegex.email.test(req.body.email)) {
     return res.status(400).json({ error: "Invalid email format." });
   }
   try {
@@ -60,13 +61,15 @@ exports.register = async (req, res) => {
 // Handle index actions
 exports.index = async function (req, res) {
   try {
-    const { page = 1, limit = 10, sortBy, sortOrder, filter } = req.query;
-
+    const { page = 1, limit = 10, sortBy, sortOrder, filter = "" } = req.query;
     let query = {};
 
+    const filterArray = helpers.getFilterArray(filter);
     // Apply filtering if any
     if (filter) {
-      query["client.name"] = { $regex: filter, $options: "i" };
+      filterArray.forEach((filter) => {
+        query[filter.name] = { $regex: filter.value, $options: "i" };
+      });
     }
 
     // Apply sorting if any
@@ -86,7 +89,11 @@ exports.index = async function (req, res) {
         { $skip: (page - 1) * limit },
         { $limit: parseInt(limit) },
       ].concat(aggregations.clientProjection)
-    );
+    ).catch((err) => {
+      return res
+        .status(500)
+        .json({ message: "Internal server error", description: err });
+    });
 
     return res.json({
       status: "success",
