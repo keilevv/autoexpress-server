@@ -4,6 +4,7 @@ const moment = require("moment");
 Car = require("../models/carModel");
 Client = require("../models/clientModel");
 const helpers = require("../utils/helpers");
+const aggregations = require("./aggregations");
 
 exports.register = async (req, res) => {
   const formattedBirthday = moment(
@@ -57,26 +58,48 @@ exports.register = async (req, res) => {
   }
 };
 // Handle index actions
-exports.index = function (req, res) {
-  Client.find({}).then((response) => {
-    Client.aggregate([
-      {
-        $lookup: {
-          from: "cars",
-          localField: "cars",
-          foreignField: "_id",
-          as: "cars",
-        },
-      },
-    ]).then((cursor) => {
-      return res.json({
-        status: "success",
-        message: "Clients list retrieved successfully",
-        count: cursor.length,
-        results: cursor,
-      });
+exports.index = async function (req, res) {
+  try {
+    const { page = 1, limit = 10, sortBy, sortOrder, filter } = req.query;
+
+    let query = {};
+
+    // Apply filtering if any
+    if (filter) {
+      query["client.name"] = { $regex: filter, $options: "i" };
+    }
+
+    // Apply sorting if any
+    let sortOptions = {};
+    if (sortBy && sortOrder) {
+      sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+    } else {
+      sortOptions["date"] = 1;
+    }
+
+    const totalClients = await Client.countDocuments(query);
+
+    const clients = await Client.aggregate(
+      [
+        { $match: query },
+        { $sort: sortOptions },
+        { $skip: (page - 1) * limit },
+        { $limit: parseInt(limit) },
+      ].concat(aggregations.clientProjection)
+    );
+
+    return res.json({
+      status: "success",
+      message: "Clients list retrieved successfully",
+      count: clients.length,
+      total: totalClients,
+      results: clients,
     });
-  });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Internal server error", description: err });
+  }
 };
 
 // Handle view client info

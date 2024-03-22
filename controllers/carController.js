@@ -3,6 +3,7 @@
 Car = require("../models/carModel");
 Client = require("../models/clientModel");
 const helpers = require("../utils/helpers");
+const aggregations = require("./aggregations");
 
 exports.register = (req, res) => {
   if (!helpers.commonRegex.vin.test(req.body.vin)) {
@@ -45,26 +46,47 @@ exports.register = (req, res) => {
   }
 };
 // Handle index actions
-exports.index = function (req, res) {
-  Car.find({}).then((response) => {
-    Car.aggregate([
-      {
-        $lookup: {
-          from: "clients",
-          localField: "clients",
-          foreignField: "_id",
-          as: "clients",
-        },
-      },
-    ]).then((cursor) => {
-      return res.json({
-        status: "success",
-        message: "Cars list retrieved successfully",
-        count: cursor.length,
-        results: cursor,
-      });
+exports.index = async function (req, res) {
+  try {
+    const { page = 1, limit = 10, sortBy, sortOrder, filter } = req.query;
+
+    let query = {};
+
+    // Apply filtering if any
+    if (filter) {
+      query["client.name"] = { $regex: filter, $options: "i" };
+    }
+
+    // Apply sorting if any
+    let sortOptions = {};
+    if (sortBy && sortOrder) {
+      sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+    } else {
+      sortOptions["date"] = 1;
+    }
+
+    const totalCars = await Car.countDocuments(query);
+    const cars = await Car.aggregate(
+      [
+        { $match: query },
+        { $sort: sortOptions },
+        { $skip: (page - 1) * limit },
+        { $limit: parseInt(limit) },
+      ].concat(aggregations.carProjection)
+    );
+
+    return res.json({
+      status: "success",
+      message: "Appointments list retrieved successfully",
+      count: cars.length,
+      total: totalCars,
+      results: cars,
     });
-  });
+  } catch (error) {
+    return res
+      .status(500)
+      .send({ message: "Internal server error", description: err });
+  }
 };
 
 // Handle list client by username
@@ -103,39 +125,37 @@ exports.getByCarPlate = function (req, res) {
 };
 
 exports.getCarListByPlate = function (req, res) {
-  if (!req.params.plate) {
-    return res.status(400).send({ message: "Input error" });
-  }
+  try {
+    if (!req.params.plate) {
+      return res.status(400).send({ message: "Input error" });
+    }
 
-  const plate = req.params.plate.toUpperCase();
-  const regex = new RegExp(plate);
+    const plate = req.params.plate.toUpperCase();
+    const regex = new RegExp(plate);
 
-  Car.aggregate([
-    {
-      $match: {
-        plate: { $regex: regex },
+    Car.aggregate([
+      {
+        $match: {
+          plate: { $regex: regex },
+        },
       },
-    },
-    {
-      $lookup: {
-        from: "clients",
-        localField: "clients",
-        foreignField: "_id",
-        as: "clients",
-      },
-    },
-  ])
-    .then((cursor) => {
-      return res.json({
-        status: "success",
-        message: "Cars list retrieved successfully",
-        count: cursor.length,
-        results: cursor,
+    ])
+      .then((cursor) => {
+        return res.json({
+          status: "success",
+          message: "Cars list retrieved successfully",
+          count: cursor.length,
+          results: cursor,
+        });
+      })
+      .catch((err) => {
+        return res.status(500).send({ message: err });
       });
-    })
-    .catch((err) => {
-      return res.status(500).send({ message: err });
-    });
+  } catch (err) {
+    return res
+      .status(500)
+      .send({ message: "Internal server error", description: err });
+  }
 };
 
 // Handle update car from id

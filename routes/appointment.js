@@ -9,13 +9,21 @@ module.exports = function (app) {
     );
     next();
   });
-  app.get("/api/appointments", [authJwt.verifyToken], controller.index);
+  app.get("/api/agenda/appointments", [authJwt.verifyToken], controller.index);
   app.post("/api/appointments/check/", controller.getUnavailableTimes);
   app.post("/api/appointment/register", controller.register);
-  app.delete("/api/appointment/delete/:appointment_id", controller.delete);
-  app.put("/api/appointment/update/:appointment_id", controller.update);
   app.delete(
-    "/api/appointments/delete-all",
+    "/api/agenda/appointment/delete/:appointment_id",
+    [authJwt.verifyToken],
+    controller.delete
+  );
+  app.put(
+    "/api/agenda/appointment/update/:appointment_id",
+    [authJwt.verifyToken],
+    controller.update
+  );
+  app.delete(
+    "/api/agenda/appointments/delete-all",
     [authJwt.verifyToken],
     controller.deleteAll
   );
