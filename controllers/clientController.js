@@ -192,33 +192,41 @@ exports.getByContryId = function (req, res) {
 // Handle update client client
 // Handle update car from id
 exports.update = function (req, res) {
-  Client.findById(req.params.client_id)
-    .then((client) => {
-      if (!client) res.status(404).send({ message: "Client not found" });
+  try {
+    Client.findById(req.params.client_id)
+      .then((client) => {
+        if (!client) res.status(404).send({ message: "Client not found" });
 
-      // Iterate over the keys in the request body and update corresponding fields
-      Object.keys(req.body).forEach((key) => {
-        client[key] = req.body[key];
-      });
-
-      // save the client and check for errors
-      client
-        .save()
-        .then((updatedClient) => {
-          res.json({
-            message: "Client updated",
-            results: updatedClient,
-          });
-        })
-        .catch((err) => {
-          res
-            .status(500)
-            .send({ message: err.message || "Error updating client" });
+        // Iterate over the keys in the request body and update corresponding fields
+        Object.keys(req.body).forEach((key) => {
+          client[key] = req.body[key];
         });
-    })
-    .catch((err) => {
-      res.status(500).send({ message: err.message || "Error finding client" });
-    });
+
+        // save the client and check for errors
+        client
+          .save()
+          .then((updatedClient) => {
+            res.json({
+              message: "Client updated",
+              results: updatedClient,
+            });
+          })
+          .catch((err) => {
+            res
+              .status(500)
+              .send({ message: err.message || "Error updating client" });
+          });
+      })
+      .catch((err) => {
+        res
+          .status(500)
+          .send({ message: err.message || "Error finding client" });
+      });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Internal server error", description: err });
+  }
 };
 // Handle delete client
 exports.delete = function (req, res) {
