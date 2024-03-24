@@ -103,7 +103,6 @@ checkCountryIdOrTelephoneNumber = (req, res, next) => {
 };
 
 checkCarPlateOrVin = (req, res, next) => {
-  // country_id
   Car.findOne({
     plate: req.body.plate,
   })

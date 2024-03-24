@@ -82,17 +82,55 @@ exports.register = async (req, res) => {
 };
 
 // Handle index actions
-exports.index = function (req, res) {
-  Appointment.find({}).then((response) => {
-    Appointment.aggregate(appointmentProjection).then((cursor) => {
-      return res.json({
-        status: "success",
-        message: "Appointments list retrieved successfully",
-        count: cursor.length,
-        results: cursor,
-      });
+
+exports.index = async function (req, res) {
+  try {
+    const { page = 1, limit = 10, sortBy, sortOrder, filter } = req.query;
+
+    let query = {};
+
+    // Apply filtering if any
+    if (filter) {
+      query["client.name"] = { $regex: filter, $options: "i" };
+      // You can define your filtering criteria here
+    }
+
+    // Apply sorting if any
+    let sortOptions = {};
+    if (sortBy && sortOrder) {
+      sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+    } else {
+      sortOptions["date"] = 1;
+    }
+
+    const totalAppointments = await Appointment.countDocuments(query);
+
+    const appointments = await Appointment.aggregate([
+      { $match: query },
+      ...appointmentProjection,
+      { $sort: sortOptions },
+      { $skip: (page - 1) * limit },
+      { $limit: parseInt(limit) },
+    ]).catch((err) => {
+      return res
+        .status(500)
+        .json({ message: "Internal server error", description: err });
     });
-  });
+
+    return res.json({
+      status: "success",
+      message: "Appointments list retrieved successfully",
+      count: appointments.length,
+      total: totalAppointments,
+      results: appointments,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      status: "error",
+      message: "An error occurred while fetching appointments.",
+      error: error.message,
+    });
+  }
 };
 
 exports.update = function (req, res) {

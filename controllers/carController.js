@@ -2,13 +2,14 @@
 // Import Models
 Car = require("../models/carModel");
 Client = require("../models/clientModel");
-const helpers = require("../utils/helpers");
+const regex = require("../utils/regex");
+const aggregations = require("./aggregations");
 
 exports.register = (req, res) => {
-  if (!helpers.commonRegex.vin.test(req.body.vin)) {
+  if (!regex.commonRegex.vin.test(req.body.vin)) {
     return res.status(400).json({ error: "Invalid vin format." });
   }
-  if (!helpers.commonRegex.carPlate.test(req.body.plate)) {
+  if (!regex.commonRegex.carPlate.test(req.body.plate)) {
     return res.status(400).json({ error: "Invalid car plate format." });
   }
 
@@ -45,36 +46,52 @@ exports.register = (req, res) => {
   }
 };
 // Handle index actions
-exports.index = function (req, res) {
-  Car.find({}).then((response) => {
-    Car.aggregate([
-      {
-        $lookup: {
-          from: "clients",
-          localField: "clients",
-          foreignField: "_id",
-          as: "clients",
-        },
-      },
-    ]).then((cursor) => {
-      return res.json({
-        status: "success",
-        message: "Cars list retrieved successfully",
-        results: cursor,
-      });
-    });
-  });
-};
+exports.index = async function (req, res) {
+  try {
+    const { page = 1, limit = 10, sortBy, sortOrder, filter } = req.query;
 
-// Handle view user user
-exports.get = function (req, res) {
-  User.findById(req.params.user_id, function (err, user) {
-    if (err) res.send(err);
-    res.json({
-      message: "Client details loading..",
-      results: user,
+    let query = {};
+
+    // Apply filtering if any
+    if (filter) {
+      filterArray.forEach((filter) => {
+        query[filter.name] = { $regex: filter.value, $options: "i" };
+      });
+    }
+    // Apply sorting if any
+    let sortOptions = {};
+    if (sortBy && sortOrder) {
+      sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+    } else {
+      sortOptions["date"] = 1;
+    }
+
+    const totalCars = await Car.countDocuments(query);
+    const cars = await Car.aggregate(
+      [
+        { $match: query },
+        { $sort: sortOptions },
+        { $skip: (page - 1) * limit },
+        { $limit: parseInt(limit) },
+      ].concat(aggregations.carProjection)
+    ).catch((err) => {
+      return res
+        .status(500)
+        .json({ message: "Internal server error", description: err });
     });
-  });
+
+    return res.json({
+      status: "success",
+      message: "Cars list retrieved successfully",
+      count: cars.length,
+      total: totalCars,
+      results: cars,
+    });
+  } catch (error) {
+    return res
+      .status(500)
+      .send({ message: "Internal server error", description: err });
+  }
 };
 
 // Handle list client by username
@@ -110,6 +127,40 @@ exports.getByCarPlate = function (req, res) {
     .catch((err) => {
       return res.status(500).send({ message: err });
     });
+};
+
+exports.getCarListByPlate = function (req, res) {
+  try {
+    if (!req.params.plate) {
+      return res.status(400).send({ message: "Input error" });
+    }
+
+    const plate = req.params.plate.toUpperCase();
+    const regex = new RegExp(plate);
+
+    Car.aggregate([
+      {
+        $match: {
+          plate: { $regex: regex },
+        },
+      },
+    ])
+      .then((cursor) => {
+        return res.json({
+          status: "success",
+          message: "Cars list retrieved successfully",
+          count: cursor.length,
+          results: cursor,
+        });
+      })
+      .catch((err) => {
+        return res.status(500).send({ message: err });
+      });
+  } catch (err) {
+    return res
+      .status(500)
+      .send({ message: "Internal server error", description: err });
+  }
 };
 
 // Handle update car from id
@@ -155,6 +206,20 @@ exports.delete = function (req, res) {
         });
       }
       return res.status(400).send({ message: "Car not found!" });
+    })
+    .catch((err) => {
+      if (err) res.status(500).send({ message: err });
+    });
+};
+
+/* WARNING: This will delete all appointments, use only on dev environment */
+exports.deleteAll = function (req, res) {
+  Car.deleteMany({})
+    .then(() => {
+      res.json({
+        status: "success",
+        message: "All cars deleted, prepare yourself, I'm going to kill you.",
+      });
     })
     .catch((err) => {
       if (err) res.status(500).send({ message: err });

@@ -9,8 +9,13 @@ module.exports = function (app) {
     );
     next();
   });
-  app.get("/api/cars", [authJwt.verifyToken], controller.index);
+  app.get("/api/operations/cars", [authJwt.verifyToken], controller.index);
   app.post("/api/car/plate/:plate", controller.getByCarPlate);
+  app.get(
+    "/api/operations/cars/plate/:plate",
+    [authJwt.verifyToken],
+    controller.getCarListByPlate
+  );
 
   app.post(
     "/api/car/register",
@@ -22,5 +27,11 @@ module.exports = function (app) {
     "/api/car/delete/:car_id",
     [authJwt.verifyToken],
     controller.delete
+  );
+  /*WARNING: This will delete all appointments, use only on dev environment */
+  app.delete(
+    "/api/cars/delete-all",
+    [authJwt.verifyToken],
+    controller.deleteAll
   );
 };

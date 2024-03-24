@@ -1,6 +1,13 @@
-exports.commonRegex = {
-  email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  country_id: /^\d{10}$/,
-  vin: /^(?=.*[0-9])(?=.*[A-z])[0-9A-z-]{16}$/,
-  carPlate: /^[a-zA-Z]{3}\d{3}$/
+exports.helpers = {
+  getFilterArray(filter) {
+    const array = filter.split("&");
+    const filterArray = [];
+    array.map((filter) => {
+      if (filter) {
+        const splitValue = filter.split("=");
+        filterArray.push({ name: splitValue[0], value: splitValue[1] });
+      }
+    });
+    return filterArray;
+  },
 };

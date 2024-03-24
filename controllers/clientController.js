@@ -3,7 +3,9 @@
 const moment = require("moment");
 Car = require("../models/carModel");
 Client = require("../models/clientModel");
-const helpers = require("../utils/helpers");
+const regex = require("../utils/regex");
+const aggregations = require("./aggregations");
+const { helpers } = require("../utils/helpers");
 
 exports.register = async (req, res) => {
   const formattedBirthday = moment(
@@ -18,11 +20,11 @@ exports.register = async (req, res) => {
     return res.status(400).json({ error: "Invalid birthday format." });
   }
 
-  if (!helpers.commonRegex.country_id.test(req.body.country_id)) {
+  if (!regex.commonRegex.country_id.test(req.body.country_id)) {
     return res.status(400).json({ error: "Invalid country_id format." });
   }
 
-  if (!helpers.commonRegex.email.test(req.body.email)) {
+  if (!regex.commonRegex.email.test(req.body.email)) {
     return res.status(400).json({ error: "Invalid email format." });
   }
   try {
@@ -57,30 +59,57 @@ exports.register = async (req, res) => {
   }
 };
 // Handle index actions
-exports.index = function (req, res) {
-  Client.find({}).then((response) => {
-    Client.aggregate([
-      {
-        $lookup: {
-          from: "cars",
-          localField: "cars",
-          foreignField: "_id",
-          as: "cars",
-        },
-      },
-    ]).then((cursor) => {
-      return res.json({
-        status: "success",
-        message: "Clients list retrieved successfully",
-        results: cursor,
+exports.index = async function (req, res) {
+  try {
+    const { page = 1, limit = 10, sortBy, sortOrder, filter = "" } = req.query;
+    let query = {};
+
+    const filterArray = helpers.getFilterArray(filter);
+    // Apply filtering if any
+    if (filter) {
+      filterArray.forEach((filter) => {
+        query[filter.name] = { $regex: filter.value, $options: "i" };
       });
+    }
+
+    // Apply sorting if any
+    let sortOptions = {};
+    if (sortBy && sortOrder) {
+      sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+    } else {
+      sortOptions["date"] = 1;
+    }
+
+    const totalClients = await Client.countDocuments(query);
+
+    const clients = await Client.aggregate(
+      [
+        { $match: query },
+        { $sort: sortOptions },
+        { $skip: (page - 1) * limit },
+        { $limit: parseInt(limit) },
+      ].concat(aggregations.clientProjection)
+    ).catch((err) => {
+      return res
+        .status(500)
+        .json({ message: "Internal server error", description: err });
     });
-  });
+
+    return res.json({
+      status: "success",
+      message: "Clients list retrieved successfully",
+      count: clients.length,
+      total: totalClients,
+      results: clients,
+    });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Internal server error", description: err });
+  }
 };
 
-// Handle view client client
-// Handle list client by username
-// Handle list client by username
+// Handle view client info
 exports.get = function (req, res) {
   Client.findById(req.params.client_id)
     .then((client) => {
@@ -106,6 +135,44 @@ exports.getByName = function (req, res) {
   });
 };
 
+exports.getClientListByName = function (req, res) {
+  if (!req.params.full_name) {
+    return res.status(400).send({ message: "Input error" });
+  }
+
+  const full_name = req.params.full_name.toUpperCase();
+  const regex = new RegExp(full_name);
+
+  Client.aggregate([
+    {
+      $match: {
+        name: { $regex: regex },
+        surname: { $regex: regex },
+        lastname: { $regex: regex },
+      },
+    },
+    {
+      $lookup: {
+        from: "cars",
+        localField: "cars",
+        foreignField: "_id",
+        as: "cars",
+      },
+    },
+  ])
+    .then((cursor) => {
+      return res.json({
+        status: "success",
+        message: "Cars list retrieved successfully",
+        count: cursor.length,
+        results: cursor,
+      });
+    })
+    .catch((err) => {
+      return res.status(500).send({ message: err });
+    });
+};
+
 // Handle list client by username
 exports.getByContryId = function (req, res) {
   Client.find({ country_id: req.params.country_id })
@@ -125,33 +192,41 @@ exports.getByContryId = function (req, res) {
 // Handle update client client
 // Handle update car from id
 exports.update = function (req, res) {
-  Client.findById(req.params.client_id)
-    .then((client) => {
-      if (!client) res.status(404).send({ message: "Client not found" });
+  try {
+    Client.findById(req.params.client_id)
+      .then((client) => {
+        if (!client) res.status(404).send({ message: "Client not found" });
 
-      // Iterate over the keys in the request body and update corresponding fields
-      Object.keys(req.body).forEach((key) => {
-        client[key] = req.body[key];
-      });
-
-      // save the client and check for errors
-      client
-        .save()
-        .then((updatedClient) => {
-          res.json({
-            message: "Client updated",
-            results: updatedClient,
-          });
-        })
-        .catch((err) => {
-          res
-            .status(500)
-            .send({ message: err.message || "Error updating client" });
+        // Iterate over the keys in the request body and update corresponding fields
+        Object.keys(req.body).forEach((key) => {
+          client[key] = req.body[key];
         });
-    })
-    .catch((err) => {
-      res.status(500).send({ message: err.message || "Error finding client" });
-    });
+
+        // save the client and check for errors
+        client
+          .save()
+          .then((updatedClient) => {
+            res.json({
+              message: "Client updated",
+              results: updatedClient,
+            });
+          })
+          .catch((err) => {
+            res
+              .status(500)
+              .send({ message: err.message || "Error updating client" });
+          });
+      })
+      .catch((err) => {
+        res
+          .status(500)
+          .send({ message: err.message || "Error finding client" });
+      });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Internal server error", description: err });
+  }
 };
 // Handle delete client
 exports.delete = function (req, res) {
@@ -166,6 +241,21 @@ exports.delete = function (req, res) {
         });
       }
       return res.status(400).send({ message: "Client not found!" });
+    })
+    .catch((err) => {
+      if (err) res.status(500).send({ message: err });
+    });
+};
+
+/* WARNING: This will delete all appointments, use only on dev environment */
+exports.deleteAll = function (req, res) {
+  Client.deleteMany({})
+    .then(() => {
+      res.json({
+        status: "success",
+        message:
+          "All clients deleted, prepare yourself, I'm going to kill you.",
+      });
     })
     .catch((err) => {
       if (err) res.status(500).send({ message: err });
