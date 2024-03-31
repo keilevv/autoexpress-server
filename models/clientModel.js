@@ -2,6 +2,10 @@
 var mongoose = require("mongoose");
 // Setup schema
 var clientSchema = mongoose.Schema({
+  archived: {
+    type: Boolean,
+    default: false,
+  },
   name: {
     type: String,
     required: true,

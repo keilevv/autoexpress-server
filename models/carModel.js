@@ -2,6 +2,10 @@
 var mongoose = require("mongoose");
 // Setup schema
 var carSchema = mongoose.Schema({
+  archived: {
+    type: Boolean,
+    default: false,
+  },
   brand: {
     type: String,
     required: true,

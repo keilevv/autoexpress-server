@@ -2,6 +2,10 @@
 var mongoose = require("mongoose");
 // Setup schema
 var appointmentSchema = mongoose.Schema({
+  archived: {
+    type: Boolean,
+    default: false,
+  },
   date: {
     type: String,
     required: true,
