@@ -120,8 +120,7 @@ exports.index = async function (req, res) {
     return res.json({
       status: "success",
       message: "Appointments list retrieved successfully",
-      count: appointments.length,
-      total: totalAppointments,
+      count: totalAppointments,
       results: appointments,
     });
   } catch (error) {
