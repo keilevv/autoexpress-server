@@ -71,6 +71,7 @@ require("./routes/user")(app);
 require("./routes/client")(app);
 require("./routes/car")(app);
 require("./routes/appointment")(app);
+require("./routes/message")(app);
 
 // Launch app to listen to specified port
 app.listen(port, function () {

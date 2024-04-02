@@ -98,8 +98,7 @@ exports.index = async function (req, res) {
     return res.json({
       status: "success",
       message: "Clients list retrieved successfully",
-      count: clients.length,
-      total: totalClients,
+      count: totalClients,
       results: clients,
     });
   } catch (err) {

@@ -4,6 +4,7 @@ Car = require("../models/carModel");
 Client = require("../models/clientModel");
 const regex = require("../utils/regex");
 const aggregations = require("./aggregations");
+const { helpers } = require("../utils/helpers");
 
 exports.register = (req, res) => {
   if (!regex.commonRegex.vin.test(req.body.vin)) {
@@ -52,6 +53,8 @@ exports.index = async function (req, res) {
 
     let query = {};
 
+    const filterArray = helpers.getFilterArray(filter);
+
     // Apply filtering if any
     if (filter) {
       filterArray.forEach((filter) => {
@@ -83,14 +86,13 @@ exports.index = async function (req, res) {
     return res.json({
       status: "success",
       message: "Cars list retrieved successfully",
-      count: cars.length,
-      total: totalCars,
+      count: totalCars,
       results: cars,
     });
   } catch (error) {
     return res
       .status(500)
-      .send({ message: "Internal server error", description: err });
+      .send({ message: "Internal server error", description: error });
   }
 };
 
