@@ -5,7 +5,7 @@
  */
 
 var app = require('../index');
-var debug = require('debug')('autoexpress-server:server');
+var debug = require('debug')('autoexpress:server');
 var http = require('http');
 
 /**
