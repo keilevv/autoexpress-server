@@ -12,6 +12,9 @@ const routes = require("./routes/index");
 const userRoutes = require("./routes/user");
 const authRoutes = require("./routes/auth");
 const clientRoutes = require("./routes/client");
+const carRoutes = require("./routes/car");
+const appointmentRoutes = require("./routes/appointment");
+const messageRoutes = require("./routes/message");
 
 const app = express();
 
@@ -40,6 +43,9 @@ app.use("/", routes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/clients", clientRoutes);
+app.use("/api/cars", carRoutes);
+app.use("/api/appointments", appointmentRoutes);
+app.use("/api/messages", messageRoutes);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
