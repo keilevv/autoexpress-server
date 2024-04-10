@@ -4,6 +4,7 @@ const Appointment = require("../models/appointmentModel");
 const User = require("../models/userModel");
 const moment = require("moment");
 const { appointmentProjection } = require("./aggregations");
+const { helpers } = require("../utils/helpers");
 
 exports.register = async (req, res) => {
   try {
@@ -85,15 +86,24 @@ exports.register = async (req, res) => {
 
 exports.index = async function (req, res) {
   try {
-    const { page = 1, limit = 10, sortBy, sortOrder, filter } = req.query;
+    const { page = 1, limit = 10, sortBy, sortOrder, ...filter } = req.query;
 
     let query = {};
 
+    const filterArray = helpers.getFilterArray(filter);
+    console.log("filterArray", filterArray);
     // Apply filtering if any
     if (filter) {
-      query["client.name"] = { $regex: filter, $options: "i" };
-      // You can define your filtering criteria here
+      filterArray.forEach((filter) => {
+        if (filter.name === "client") {
+          query["client.name"] = { $regex: filter.value, $options: "i" };
+        } else {
+          query[filter.name] = { $regex: filter.value, $options: "i" };
+        }
+      });
     }
+
+    console.log("query", query);
 
     // Apply sorting if any
     let sortOptions = {};
