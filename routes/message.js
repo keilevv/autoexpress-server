@@ -5,11 +5,7 @@ const router = express.Router();
 
 router.get("/operations", [authJwt.verifyToken], controller.index);
 
-router.post(
-  "/register",
-  [verifyRegister.checkCountryIdOrTelephoneNumber],
-  controller.register
-);
+router.post("/register", controller.register);
 
 //   router.put("/api/message/update/:message_id", controller.update);
 //   router.delete(
