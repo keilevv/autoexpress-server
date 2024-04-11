@@ -98,6 +98,7 @@ exports.index = async function (req, res) {
 
 // Handle list client by username
 exports.getByCarPlate = function (req, res) {
+  console.log("enters")
   if (!req.params.plate.length) {
     return res.status(400).send({ message: "Input error" });
   }
