@@ -91,7 +91,6 @@ exports.index = async function (req, res) {
     let query = {};
 
     const filterArray = helpers.getFilterArray(filter);
-    console.log("filterArray", filterArray);
     // Apply filtering if any
     if (filter) {
       filterArray.forEach((filter) => {
@@ -102,8 +101,6 @@ exports.index = async function (req, res) {
         }
       });
     }
-
-    console.log("query", query);
 
     // Apply sorting if any
     let sortOptions = {};

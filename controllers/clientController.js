@@ -61,7 +61,7 @@ exports.register = async (req, res) => {
 // Handle index actions
 exports.index = async function (req, res) {
   try {
-    const { page = 1, limit = 10, sortBy, sortOrder, filter = "" } = req.query;
+    const { page = 1, limit = 10, sortBy, sortOrder, ...filter } = req.query;
     let query = {};
 
     const filterArray = helpers.getFilterArray(filter);

@@ -49,7 +49,7 @@ exports.register = (req, res) => {
 // Handle index actions
 exports.index = async function (req, res) {
   try {
-    const { page = 1, limit = 10, sortBy, sortOrder, filter } = req.query;
+    const { page = 1, limit = 10, sortBy, sortOrder, ...filter } = req.query;
 
     let query = {};
 
@@ -58,7 +58,12 @@ exports.index = async function (req, res) {
     // Apply filtering if any
     if (filter) {
       filterArray.forEach((filter) => {
-        query[filter.name] = { $regex: filter.value, $options: "i" };
+        if (filter.name === "archived") {
+          const archived = filter.value === "true" ? true : false;
+          query[filter.name] = archived;
+        } else {
+          query[filter.name] = { $regex: filter.value, $options: "i" };
+        }
       });
     }
     // Apply sorting if any
@@ -98,7 +103,6 @@ exports.index = async function (req, res) {
 
 // Handle list client by username
 exports.getByCarPlate = function (req, res) {
-  console.log("enters")
   if (!req.params.plate.length) {
     return res.status(400).send({ message: "Input error" });
   }
