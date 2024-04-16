@@ -37,6 +37,7 @@ exports.appointmentProjection = [
       _id: 1,
       date: 1,
       time: 1,
+      archived: 1,
       "client._id": 1,
       "client.name": 1,
       "client.surname": 1,

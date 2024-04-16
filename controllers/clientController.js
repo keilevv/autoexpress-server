@@ -68,7 +68,12 @@ exports.index = async function (req, res) {
     // Apply filtering if any
     if (filter) {
       filterArray.forEach((filter) => {
-        query[filter.name] = { $regex: filter.value, $options: "i" };
+        if (filter.name === "archived") {
+          const archived = filter.value === "true" ? true : false;
+          query[filter.name] = archived;
+        } else {
+          query[filter.name] = { $regex: filter.value, $options: "i" };
+        }
       });
     }
 
