@@ -6,6 +6,7 @@ Client = require("../models/clientModel");
 const regex = require("../utils/regex");
 const aggregations = require("./aggregations");
 const { helpers } = require("../utils/helpers");
+const mongoose = require("mongoose");
 
 exports.register = async (req, res) => {
   const formattedBirthday = moment(
@@ -115,16 +116,34 @@ exports.index = async function (req, res) {
 
 // Handle view client info
 exports.get = function (req, res) {
-  Client.findById(req.params.client_id)
-    .then((client) => {
-      if (!client) return res.status(404).send({ message: "Client not found" });
+  const clientId = new mongoose.Types.ObjectId(req.params.client_id);
+  if (!clientId) {
+    return res.status(400).send({ message: "Invalid client id" });
+  }
+
+  Client.aggregate(
+    [
+      {
+        $match: {
+          _id: clientId,
+        },
+      },
+    ].concat(aggregations.clientProjection)
+  )
+    .then((cursor) => {
+      if (!cursor || !cursor.length) {
+        return res.status(404).send({ message: "Client not found" });
+      }
       return res.json({
-        message: "Client by id loading...",
-        results: client,
+        status: "success",
+        message: "Client retrieved successfully",
+        results: cursor[0],
       });
     })
-    .catch((err) => {
-      return res.status(500).send({ message: err });
+    .catch((error) => {
+      return res
+        .status(500)
+        .send({ message: "Internal server error", description: error });
     });
 };
 

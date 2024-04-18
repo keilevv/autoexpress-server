@@ -88,6 +88,7 @@ exports.clientProjection = [
       email: 1,
       cars: 1,
       telephone_number: 1,
+      created_date: 1,
     },
   },
 ];

@@ -2,6 +2,7 @@
 // Import Models
 Car = require("../models/carModel");
 Client = require("../models/clientModel");
+const mongoose = require("mongoose");
 const regex = require("../utils/regex");
 const aggregations = require("./aggregations");
 const { helpers } = require("../utils/helpers");
@@ -99,6 +100,38 @@ exports.index = async function (req, res) {
       .status(500)
       .send({ message: "Internal server error", description: error });
   }
+};
+
+exports.get = function (req, res) {
+  const carId = new mongoose.Types.ObjectId(req.params.car_id);
+  if (!carId) {
+    return res.status(400).send({ message: "Invalid car id" });
+  }
+
+  Car.aggregate(
+    [
+      {
+        $match: {
+          _id: carId,
+        },
+      },
+    ].concat(aggregations.carProjection)
+  )
+    .then((cursor) => {
+      if (!cursor || !cursor.length) {
+        return res.status(404).send({ message: "Car not found" });
+      }
+      return res.json({
+        status: "success",
+        message: "Car retrieved successfully",
+        results: cursor[0],
+      });
+    })
+    .catch((error) => {
+      return res
+        .status(500)
+        .send({ message: "Internal server error", description: error });
+    });
 };
 
 // Handle list client by username

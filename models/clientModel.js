@@ -40,6 +40,10 @@ var clientSchema = mongoose.Schema({
       ref: "Car",
     },
   ],
+  created_date: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 // Export Car model
