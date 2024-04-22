@@ -37,6 +37,7 @@ exports.appointmentProjection = [
       _id: 1,
       date: 1,
       time: 1,
+      archived: 1,
       "client._id": 1,
       "client.name": 1,
       "client.surname": 1,
@@ -87,6 +88,10 @@ exports.clientProjection = [
       email: 1,
       cars: 1,
       telephone_number: 1,
+      birthday: 1,
+      country_id: 1,
+      created_date: 1,
+      archived: 1,
     },
   },
 ];

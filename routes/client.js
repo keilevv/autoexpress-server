@@ -4,6 +4,7 @@ const router = express.Router();
 const controller = require("../controllers/clientController");
 
 router.get("/operations", [authJwt.verifyToken], controller.index);
+router.get("/operations/:client_id", [authJwt.verifyToken], controller.get);
 router.get(
   "/operations/name/:full_name",
   [authJwt.verifyToken],

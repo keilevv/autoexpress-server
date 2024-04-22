@@ -2,6 +2,7 @@
 // Import Models
 Car = require("../models/carModel");
 Client = require("../models/clientModel");
+const mongoose = require("mongoose");
 const regex = require("../utils/regex");
 const aggregations = require("./aggregations");
 const { helpers } = require("../utils/helpers");
@@ -49,7 +50,7 @@ exports.register = (req, res) => {
 // Handle index actions
 exports.index = async function (req, res) {
   try {
-    const { page = 1, limit = 10, sortBy, sortOrder, filter } = req.query;
+    const { page = 1, limit = 10, sortBy, sortOrder, ...filter } = req.query;
 
     let query = {};
 
@@ -58,7 +59,12 @@ exports.index = async function (req, res) {
     // Apply filtering if any
     if (filter) {
       filterArray.forEach((filter) => {
-        query[filter.name] = { $regex: filter.value, $options: "i" };
+        if (filter.name === "archived") {
+          const archived = filter.value === "true" ? true : false;
+          query[filter.name] = archived;
+        } else {
+          query[filter.name] = { $regex: filter.value, $options: "i" };
+        }
       });
     }
     // Apply sorting if any
@@ -96,9 +102,40 @@ exports.index = async function (req, res) {
   }
 };
 
+exports.get = function (req, res) {
+  const carId = new mongoose.Types.ObjectId(req.params.car_id);
+  if (!carId) {
+    return res.status(400).send({ message: "Invalid car id" });
+  }
+
+  Car.aggregate(
+    [
+      {
+        $match: {
+          _id: carId,
+        },
+      },
+    ].concat(aggregations.carProjection)
+  )
+    .then((cursor) => {
+      if (!cursor || !cursor.length) {
+        return res.status(404).send({ message: "Car not found" });
+      }
+      return res.json({
+        status: "success",
+        message: "Car retrieved successfully",
+        results: cursor[0],
+      });
+    })
+    .catch((error) => {
+      return res
+        .status(500)
+        .send({ message: "Internal server error", description: error });
+    });
+};
+
 // Handle list client by username
 exports.getByCarPlate = function (req, res) {
-  console.log("enters")
   if (!req.params.plate.length) {
     return res.status(400).send({ message: "Input error" });
   }

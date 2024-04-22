@@ -77,7 +77,6 @@ exports.register = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "Unhandled server error" });
   }
 };
@@ -91,19 +90,21 @@ exports.index = async function (req, res) {
     let query = {};
 
     const filterArray = helpers.getFilterArray(filter);
-    console.log("filterArray", filterArray);
     // Apply filtering if any
     if (filter) {
       filterArray.forEach((filter) => {
         if (filter.name === "client") {
           query["client.name"] = { $regex: filter.value, $options: "i" };
-        } else {
-          query[filter.name] = { $regex: filter.value, $options: "i" };
+          return;
         }
+        if (filter.name === "archived") {
+          const archived = filter.value === "true" ? true : false;
+          query[filter.name] = archived;
+          return;
+        }
+        query[filter.name] = { $regex: filter.value, $options: "i" };
       });
     }
-
-    console.log("query", query);
 
     // Apply sorting if any
     let sortOptions = {};
@@ -144,57 +145,39 @@ exports.index = async function (req, res) {
 
 exports.update = function (req, res) {
   try {
-    const appointmentId = req.params.appointment_id;
-    Appointment.findById(appointmentId)
-      .then((appointment) => {
-        const { date, time } = req.body;
-        const formattedDate = date
-          ? moment(date, "DD/MM/YYYY", true).format("DD/MM/YYYY")
-          : appointment.date;
-        if (
-          !formattedDate ||
-          !moment(formattedDate, "DD/MM/YYYY", true).isValid()
-        ) {
-          return res.status(400).json({ error: "Invalid date format." });
-        }
-        // Validate and format the time
-        const formattedTime = time
-          ? moment(time, "HH:mm", true).format("HH:mm")
-          : appointment.time;
+    Appointment.findById(req.params.appointment_id)
+      .then((client) => {
+        if (!client) res.status(404).send({ message: "Appointment not found" });
 
-        if (!formattedTime || !moment(formattedTime, "HH:mm", true).isValid()) {
-          return res.status(400).json({ error: "Invalid time format." });
-        }
-        // Find and update the appointment by ID
-        Appointment.findByIdAndUpdate(
-          appointmentId,
-          {
-            $set: {
-              date: formattedDate,
-              time: formattedTime,
-              client: req.body.client ? req.body.client : appointment.client,
-              user: req.body.user ? req.body.user : appointment.user,
-            },
-          },
-          { new: true } // Return the updated document
-        )
-          .then((updatedAppointment) => {
-            res.status(200).json({
-              message: "Appointment updated successfully!",
-              results: updatedAppointment,
+        // Iterate over the keys in the request body and update corresponding fields
+        Object.keys(req.body).forEach((key) => {
+          client[key] = req.body[key];
+        });
+
+        // save the client and check for errors
+        client
+          .save()
+          .then((updatedClient) => {
+            res.json({
+              message: "Appointment updated",
+              results: updatedClient,
             });
           })
           .catch((err) => {
-            return res
+            res
               .status(500)
-              .json({ message: "Internal server error", error: err });
+              .send({ message: err.message || "Error updating appointment" });
           });
       })
       .catch((err) => {
-        return res.status(404).json({ error: "Appointment not found." });
+        res
+          .status(500)
+          .send({ message: err.message || "Error finding appointment" });
       });
-  } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Internal server error", description: err });
   }
 };
 

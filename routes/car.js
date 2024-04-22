@@ -4,6 +4,7 @@ const controller = require("../controllers/carController");
 const router = express.Router();
 
 router.get("/operations", [authJwt.verifyToken], controller.index);
+router.get("/operations/:car_id", [authJwt.verifyToken], controller.get);
 router.post("/plate/:plate", controller.getByCarPlate);
 router.get(
   "/operations/plate/:plate",
