@@ -3,6 +3,11 @@ const { authJwt } = require("../middlewares");
 const controller = require("../controllers/appointmentController");
 const router = express.Router();
 
+router.get(
+  "/operations/:appointment_id",
+  [authJwt.verifyToken],
+  controller.get
+);
 router.get("/agenda", [authJwt.verifyToken], controller.index);
 router.post("/check", controller.getUnavailableTimes);
 router.post("/register", controller.register);

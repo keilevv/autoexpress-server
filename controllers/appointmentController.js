@@ -5,6 +5,7 @@ const User = require("../models/userModel");
 const moment = require("moment");
 const { appointmentProjection } = require("./aggregations");
 const { helpers } = require("../utils/helpers");
+const mongoose = require("mongoose");
 
 exports.register = async (req, res) => {
   try {
@@ -141,6 +142,38 @@ exports.index = async function (req, res) {
       error: error.message,
     });
   }
+};
+
+exports.get = function (req, res) {
+  const appointmentId = new mongoose.Types.ObjectId(req.params.appointment_id);
+  if (!appointmentId) {
+    return res.status(400).send({ message: "Invalid appoointment id" });
+  }
+
+  Appointment.aggregate(
+    [
+      {
+        $match: {
+          _id: appointmentId,
+        },
+      },
+    ].concat(appointmentProjection)
+  )
+    .then((cursor) => {
+      if (!cursor || !cursor.length) {
+        return res.status(404).send({ message: "Appointment not found" });
+      }
+      return res.json({
+        status: "success",
+        message: "Appointment retrieved successfully",
+        results: cursor[0],
+      });
+    })
+    .catch((error) => {
+      return res
+        .status(500)
+        .send({ message: "Internal server error", description: error });
+    });
 };
 
 exports.update = function (req, res) {
