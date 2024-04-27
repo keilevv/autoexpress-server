@@ -1,6 +1,7 @@
 // clientController.js
 // Import Models
 const Appointment = require("../models/appointmentModel");
+const Client = require("../models/clientModel");
 const User = require("../models/userModel");
 const moment = require("moment");
 const { appointmentProjection } = require("./aggregations");
@@ -91,11 +92,17 @@ exports.index = async function (req, res) {
     let query = {};
 
     const filterArray = helpers.getFilterArray(filter);
-    // Apply filtering if any
     if (filter) {
       filterArray.forEach((filter) => {
-        if (filter.name === "client") {
-          query["client.name"] = { $regex: filter.value, $options: "i" };
+        if (filter.name === "full_name") {
+          if (filter.value) {
+            query["$or"] = [
+              { "client.name": { $regex: filter.value, $options: "i" } },
+              { "client.surname": { $regex: filter.value, $options: "i" } },
+              { "client.lastname": { $regex: filter.value, $options: "i" } },
+              { "client.email": { $regex: filter.value, $options: "i" } },
+            ];
+          }
           return;
         }
         if (filter.name === "archived") {
@@ -103,11 +110,12 @@ exports.index = async function (req, res) {
           query[filter.name] = archived;
           return;
         }
-        query[filter.name] = { $regex: filter.value, $options: "i" };
+        if (filter.name !== "client" && filter.name !== "archived") {
+          query[filter.name] = { $regex: filter.value, $options: "i" };
+        }
       });
     }
 
-    // Apply sorting if any
     let sortOptions = {};
     if (sortBy && sortOrder) {
       sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
@@ -118,8 +126,8 @@ exports.index = async function (req, res) {
     const totalAppointments = await Appointment.countDocuments(query);
 
     const appointments = await Appointment.aggregate([
-      { $match: query },
       ...appointmentProjection,
+      { $match: query },
       { $sort: sortOptions },
       { $skip: (page - 1) * limit },
       { $limit: parseInt(limit) },

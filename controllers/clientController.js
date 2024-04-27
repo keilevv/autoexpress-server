@@ -69,10 +69,23 @@ exports.index = async function (req, res) {
     // Apply filtering if any
     if (filter) {
       filterArray.forEach((filter) => {
+        if (filter.name === "full_name") {
+          if (filter.value) {
+            query["$or"] = [
+              { name: { $regex: filter.value, $options: "i" } },
+              { surname: { $regex: filter.value, $options: "i" } },
+              { lastname: { $regex: filter.value, $options: "i" } },
+              { email: { $regex: filter.value, $options: "i" } },
+            ];
+          }
+          return;
+        }
         if (filter.name === "archived") {
           const archived = filter.value === "true" ? true : false;
           query[filter.name] = archived;
-        } else {
+          return;
+        }
+        if (filter.name !== "full_name" && filter.name !== "archived") {
           query[filter.name] = { $regex: filter.value, $options: "i" };
         }
       });
