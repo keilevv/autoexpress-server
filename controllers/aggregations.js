@@ -34,6 +34,7 @@ exports.appointmentProjection = [
   },
   {
     $project: {
+      created_date: 1,
       _id: 1,
       date: 1,
       time: 1,
@@ -106,3 +107,5 @@ exports.carProjection = [
     },
   },
 ];
+
+exports.getAppointmentByClientName = [{}];

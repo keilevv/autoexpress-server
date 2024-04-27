@@ -1,10 +1,12 @@
 // clientController.js
 // Import Models
 const Appointment = require("../models/appointmentModel");
+const Client = require("../models/clientModel");
 const User = require("../models/userModel");
 const moment = require("moment");
 const { appointmentProjection } = require("./aggregations");
 const { helpers } = require("../utils/helpers");
+const mongoose = require("mongoose");
 
 exports.register = async (req, res) => {
   try {
@@ -90,11 +92,17 @@ exports.index = async function (req, res) {
     let query = {};
 
     const filterArray = helpers.getFilterArray(filter);
-    // Apply filtering if any
     if (filter) {
       filterArray.forEach((filter) => {
-        if (filter.name === "client") {
-          query["client.name"] = { $regex: filter.value, $options: "i" };
+        if (filter.name === "full_name") {
+          if (filter.value) {
+            query["$or"] = [
+              { "client.name": { $regex: filter.value, $options: "i" } },
+              { "client.surname": { $regex: filter.value, $options: "i" } },
+              { "client.lastname": { $regex: filter.value, $options: "i" } },
+              { "client.email": { $regex: filter.value, $options: "i" } },
+            ];
+          }
           return;
         }
         if (filter.name === "archived") {
@@ -102,11 +110,12 @@ exports.index = async function (req, res) {
           query[filter.name] = archived;
           return;
         }
-        query[filter.name] = { $regex: filter.value, $options: "i" };
+        if (filter.name !== "client" && filter.name !== "archived") {
+          query[filter.name] = { $regex: filter.value, $options: "i" };
+        }
       });
     }
 
-    // Apply sorting if any
     let sortOptions = {};
     if (sortBy && sortOrder) {
       sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
@@ -117,8 +126,8 @@ exports.index = async function (req, res) {
     const totalAppointments = await Appointment.countDocuments(query);
 
     const appointments = await Appointment.aggregate([
-      { $match: query },
       ...appointmentProjection,
+      { $match: query },
       { $sort: sortOptions },
       { $skip: (page - 1) * limit },
       { $limit: parseInt(limit) },
@@ -141,6 +150,38 @@ exports.index = async function (req, res) {
       error: error.message,
     });
   }
+};
+
+exports.get = function (req, res) {
+  const appointmentId = new mongoose.Types.ObjectId(req.params.appointment_id);
+  if (!appointmentId) {
+    return res.status(400).send({ message: "Invalid appoointment id" });
+  }
+
+  Appointment.aggregate(
+    [
+      {
+        $match: {
+          _id: appointmentId,
+        },
+      },
+    ].concat(appointmentProjection)
+  )
+    .then((cursor) => {
+      if (!cursor || !cursor.length) {
+        return res.status(404).send({ message: "Appointment not found" });
+      }
+      return res.json({
+        status: "success",
+        message: "Appointment retrieved successfully",
+        results: cursor[0],
+      });
+    })
+    .catch((error) => {
+      return res
+        .status(500)
+        .send({ message: "Internal server error", description: error });
+    });
 };
 
 exports.update = function (req, res) {
