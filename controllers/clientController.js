@@ -68,25 +68,36 @@ exports.index = async function (req, res) {
     const filterArray = helpers.getFilterArray(filter);
     // Apply filtering if any
     if (filter) {
-      filterArray.forEach((filter) => {
-        if (filter.name === "full_name") {
-          if (filter.value) {
+      filterArray.forEach((filterItem) => {
+        switch (filterItem.name) {
+          case "archived":
+            const archived = filterItem.value === "true" ? true : false;
+            query[filterItem.name] = archived;
+            break;
+          case "start_date":
+          case "end_date":
+            // Parse and add date filter to the query
+            const dateFilter = {};
+            if (req.query.start_date)
+              dateFilter["$gte"] = new Date(req.query.start_date);
+            if (req.query.end_date)
+              dateFilter["$lte"] = new Date(req.query.end_date);
+            query["created_date"] = dateFilter;
+            break;
+          case "full_name":
             query["$or"] = [
-              { name: { $regex: filter.value, $options: "i" } },
-              { surname: { $regex: filter.value, $options: "i" } },
-              { lastname: { $regex: filter.value, $options: "i" } },
-              { email: { $regex: filter.value, $options: "i" } },
+              { name: { $regex: filterItem.value, $options: "i" } },
+              { surname: { $regex: filterItem.value, $options: "i" } },
+              { lastname: { $regex: filterItem.value, $options: "i" } },
+              { email: { $regex: filterItem.value, $options: "i" } },
             ];
-          }
-          return;
-        }
-        if (filter.name === "archived") {
-          const archived = filter.value === "true" ? true : false;
-          query[filter.name] = archived;
-          return;
-        }
-        if (filter.name !== "full_name" && filter.name !== "archived") {
-          query[filter.name] = { $regex: filter.value, $options: "i" };
+            break;
+          default:
+            query[filterItem.name] = {
+              $regex: filterItem.value,
+              $options: "i",
+            };
+            break;
         }
       });
     }

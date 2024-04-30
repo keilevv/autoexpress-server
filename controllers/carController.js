@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const regex = require("../utils/regex");
 const aggregations = require("./aggregations");
 const { helpers } = require("../utils/helpers");
+const dayjs = require("dayjs");
 
 exports.register = (req, res) => {
   if (!regex.commonRegex.vin.test(req.body.vin)) {
@@ -58,12 +59,28 @@ exports.index = async function (req, res) {
 
     // Apply filtering if any
     if (filter) {
-      filterArray.forEach((filter) => {
-        if (filter.name === "archived") {
-          const archived = filter.value === "true" ? true : false;
-          query[filter.name] = archived;
-        } else {
-          query[filter.name] = { $regex: filter.value, $options: "i" };
+      filterArray.forEach((filterItem) => {
+        switch (filterItem.name) {
+          case "archived":
+            const archived = filterItem.value === "true" ? true : false;
+            query[filterItem.name] = archived;
+            break;
+          case "start_date":
+          case "end_date":
+            // Parse and add date filter to the query
+            const dateFilter = {};
+            if (req.query.start_date)
+              dateFilter["$gte"] = new Date(req.query.start_date);
+            if (req.query.end_date)
+              dateFilter["$lte"] = new Date(req.query.end_date);
+            query["created_date"] = dateFilter;
+            break;
+          default:
+            query[filterItem.name] = {
+              $regex: filterItem.value,
+              $options: "i",
+            };
+            break;
         }
       });
     }
