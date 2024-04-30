@@ -83,6 +83,7 @@ exports.clientProjection = [
   {
     $project: {
       _id: 1,
+      created_date: 1,
       name: 1,
       surname: 1,
       lastname: 1,
