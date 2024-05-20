@@ -10,34 +10,38 @@ const mongoose = require("mongoose");
 
 exports.register = async (req, res) => {
   try {
-    const formattedDate = moment(req.body.date, "DD/MM/YYYY", true).format(
-      "DD/MM/YYYY"
-    );
-    if (
-      !formattedDate ||
-      !moment(formattedDate, "DD/MM/YYYY", true).isValid()
-    ) {
+    // Parse and validate the date
+    const formattedDate = moment(req.body.date, "DD/MM/YYYY");
+    if (!formattedDate.isValid()) {
       return res.status(400).json({ error: "Invalid date format." });
     }
 
-    const formattedTime = moment(req.body.time, "HH:mm", true).format("HH:mm");
-    if (!formattedTime || !moment(formattedTime, "HH:mm", true).isValid()) {
+    // Parse and validate the time
+    const formattedTime = moment(req.body.time, "HH:mm");
+    if (!formattedTime.isValid()) {
       return res.status(400).json({ error: "Invalid time format." });
     }
+
+    // Convert formatted date and time to Date object
+    const date = formattedDate.toDate();
+    const time = formattedTime.format("HH:mm");
 
     // Check if the selected time is available for users with a specific role
     const roles = "operator"; // Replace with your specific role
     const operatorUsers = await User.find({ roles });
 
+    if (!operatorUsers.length) {
+      return res.status(404).json({ error: "No operators found." });
+    }
+
+    // Query to find busy users at the specified date and time
     const busyUsers = await Appointment.find({
-      date: { $regex: formattedDate },
-      time: { $regex: formattedTime },
+      date: date,
+      time: time,
       user: { $in: operatorUsers.map((user) => user._id) },
     });
 
-    let availableUserId = operatorUsers[0]
-      ? operatorUsers[0]._id
-      : req.body.user;
+    let availableUserId = operatorUsers[0]._id;
     if (busyUsers.length > 0) {
       // Find an available user with the specified role for that time
       const availableUser = operatorUsers.find(
@@ -56,33 +60,25 @@ exports.register = async (req, res) => {
     }
 
     const appointment = new Appointment({
-      date: formattedDate,
-      time: formattedTime,
+      date: date,
+      time: time,
       user: availableUserId,
       client: req.body.client,
       car: req.body.car,
     });
 
-    let savedAppointment = {};
-    await appointment.save().then((appointment) => {
-      savedAppointment = appointment;
-    });
+    const savedAppointment = await appointment.save();
 
-    const cursor = await Appointment.aggregate(appointmentProjection);
-
-    cursor.forEach((appointment) => {
-      if (appointment._id.equals(savedAppointment._id)) {
-        return res.send({
-          message: "Appointment was registered successfully!",
-          results: appointment,
-        });
-      }
+    return res.status(201).json({
+      message: "Appointment was registered successfully!",
+      results: savedAppointment,
     });
   } catch (error) {
-    res.status(500).json({ message: "Unhandled server error" });
+    res
+      .status(500)
+      .json({ message: "Unhandled server error", error: error.message });
   }
 };
-
 // Handle index actions
 
 exports.index = async function (req, res) {
@@ -93,25 +89,45 @@ exports.index = async function (req, res) {
 
     const filterArray = helpers.getFilterArray(filter);
     if (filter) {
-      filterArray.forEach((filter) => {
-        if (filter.name === "full_name") {
-          if (filter.value) {
-            query["$or"] = [
-              { "client.name": { $regex: filter.value, $options: "i" } },
-              { "client.surname": { $regex: filter.value, $options: "i" } },
-              { "client.lastname": { $regex: filter.value, $options: "i" } },
-              { "client.email": { $regex: filter.value, $options: "i" } },
-            ];
-          }
-          return;
-        }
-        if (filter.name === "archived") {
-          const archived = filter.value === "true" ? true : false;
-          query[filter.name] = archived;
-          return;
-        }
-        if (filter.name !== "client" && filter.name !== "archived") {
-          query[filter.name] = { $regex: filter.value, $options: "i" };
+      filterArray.forEach((filterItem) => {
+        switch (filterItem.name) {
+          case "archived":
+            const archived = filterItem.value === "true" ? true : false;
+            query[filterItem.name] = archived;
+            break;
+          case "start_date":
+          case "end_date":
+            // Parse and add date filter to the query
+            const dateFilter = {};
+            if (req.query.start_date)
+              dateFilter["$gte"] = new Date(req.query.start_date);
+            if (req.query.end_date)
+              dateFilter["$lte"] = new Date(req.query.end_date);
+            query["date"] = dateFilter;
+            break;
+          case "full_name":
+            if (filterItem.value) {
+              query["$or"] = [
+                { "client.name": { $regex: filterItem.value, $options: "i" } },
+                {
+                  "client.surname": { $regex: filterItem.value, $options: "i" },
+                },
+                {
+                  "client.lastname": {
+                    $regex: filterItem.value,
+                    $options: "i",
+                  },
+                },
+                { "client.email": { $regex: filterItem.value, $options: "i" } },
+              ];
+            }
+            break;
+          default:
+            query[filterItem.name] = {
+              $regex: filterItem.value,
+              $options: "i",
+            };
+            break;
         }
       });
     }
@@ -239,7 +255,7 @@ exports.delete = function (req, res) {
 };
 
 exports.getUnavailableTimes = function (req, res) {
-  const date = req.body.date;
+  const date = moment(req.body.date, "DD/MM/YYYY");
 
   // Step 1: Fetch operator users
   User.find({ roles: "operator" })
