@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 Message = require("../models/messageModel");
 const regex = require("../utils/regex");
 const { helpers } = require("../utils/helpers");
@@ -86,4 +87,86 @@ exports.index = async function (req, res) {
       .status(500)
       .json({ message: "Internal server error", description: err });
   }
+};
+
+exports.get = function (req, res) {
+  const messageId = new mongoose.Types.ObjectId(req.params.message_id);
+  if (!messageId) {
+    return res.status(400).send({ message: "Invalid message id" });
+  }
+
+  Message.aggregate([
+    {
+      $match: {
+        _id: messageId,
+      },
+    },
+  ])
+    .then((cursor) => {
+      if (!cursor || !cursor.length) {
+        return res.status(404).send({ message: "Message not found" });
+      }
+      return res.json({
+        status: "success",
+        message: "Message retrieved successfully",
+        results: cursor[0],
+      });
+    })
+    .catch((error) => {
+      return res
+        .status(500)
+        .send({ message: "Internal server error", description: error });
+    });
+};
+
+exports.update = function (req, res) {
+  try {
+    Message.findById(req.params.message_id)
+      .then((message) => {
+        if (!message) res.status(404).send({ message: "Message not found" });
+
+        Object.keys(req.body).forEach((key) => {
+          message[key] = req.body[key];
+        });
+
+        message
+          .save()
+          .then((updatedMessage) => {
+            res.json({
+              message: "Message updated",
+              results: updatedMessage,
+            });
+          })
+          .catch((err) => {
+            res
+              .status(500)
+              .send({ message: err.message || "Error updating message" });
+          });
+      })
+      .catch((err) => {
+        res
+          .status(500)
+          .send({ message: err.message || "Error finding message" });
+      });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Internal server error", description: err });
+  }
+};
+
+// Handle delete message
+exports.delete = function (req, res) {
+  Message.deleteOne({
+    _id: req.params.message_id,
+  })
+    .then(() => {
+      res.json({
+        status: "success",
+        message: "Message deleted",
+      });
+    })
+    .catch((err) => {
+      if (err) res.status(500).send({ message: err });
+    });
 };
