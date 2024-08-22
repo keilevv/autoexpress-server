@@ -7,6 +7,10 @@ router.get("/operations", [authJwt.verifyToken], controller.index);
 
 router.post("/register", controller.register);
 
+router.get("/operations/:message_id", [authJwt.verifyToken], controller.get);
+router.put("/operations/update/:message_id", [authJwt.verifyToken], controller.update);
+router.delete("/operations/delete/:message_id", [authJwt.verifyToken], controller.delete);
+
 //   router.put("/api/message/update/:message_id", controller.update);
 //   router.delete(
 //     "/api/message/delete/:client_id",
