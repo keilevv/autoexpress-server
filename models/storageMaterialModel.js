@@ -6,6 +6,10 @@ var storageMaterialSchema = mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  name: {
+    type: String,
+    required: true,
+  },
   reference: {
     type: Number,
     required: true,

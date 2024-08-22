@@ -15,7 +15,7 @@ const clientRoutes = require("./routes/client");
 const carRoutes = require("./routes/car");
 const appointmentRoutes = require("./routes/appointment");
 const messageRoutes = require("./routes/message");
-const materialRoutes = require("./routes/materials");
+const inventoryRoutes = require("./routes/inventory");
 
 const app = express();
 
@@ -47,7 +47,7 @@ app.use("/api/clients", clientRoutes);
 app.use("/api/cars", carRoutes);
 app.use("/api/appointments", appointmentRoutes);
 app.use("/api/messages", messageRoutes);
-app.use("/api/materials", materialRoutes);
+app.use("/api/inventory", inventoryRoutes);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
