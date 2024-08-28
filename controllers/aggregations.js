@@ -109,4 +109,31 @@ exports.carProjection = [
   },
 ];
 
+exports.consumptionMaterialProjection = [
+  {
+    $lookup: {
+      from: "storagematerials",
+      localField: "material",
+      foreignField: "_id",
+      as: "material",
+    },
+  },
+  {
+    $unwind: "$material",
+  },
+  {
+    $project: {
+      _id: 1,
+      archived: 1,
+      area: 1,
+      quantity: 1,
+      created_date: 1,
+      "material.name": 1,
+      "material.reference": 1,
+      "material.unit": 1,
+      "material.price": 1,
+    },
+  },
+];
+
 exports.getAppointmentByClientName = [{}];

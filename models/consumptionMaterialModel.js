@@ -26,7 +26,7 @@ var consumptionMaterialSchema = mongoose.Schema({
 
 // Export Info model
 var ConsumptionMaterial = (module.exports = mongoose.model(
-  "inventory",
+  "consumptionMaterial",
   consumptionMaterialSchema
 ));
 module.exports.get = function (callback, limit) {
