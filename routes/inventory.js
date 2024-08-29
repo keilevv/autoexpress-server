@@ -1,5 +1,5 @@
 const express = require("express");
-const { authJwt } = require("../middlewares");
+const { authJwt, verifyMaterial } = require("../middlewares");
 const storageMaterialController = require("../controllers/storageMaterialController");
 const consumptionMaterialController = require("../controllers/consumptionMaterialController");
 const router = express.Router();
@@ -17,12 +17,12 @@ router.get(
 );
 router.post(
   "/register-storage",
-  [authJwt.verifyToken],
+  [authJwt.verifyToken, verifyMaterial.checkStorageMatererialByReference],
   storageMaterialController.register
 );
 router.put(
   "/operations/update/storage/:material_id",
-  [authJwt.verifyToken],
+  [authJwt.verifyToken, verifyMaterial.checkStorageMatererialByReference],
   storageMaterialController.update
 );
 router.delete(
@@ -50,7 +50,7 @@ router.post(
   consumptionMaterialController.register
 );
 router.put(
-  "/operations/consumption/update/:material_id",
+  "/operations/update/consumption/:material_id",
   [authJwt.verifyToken],
   consumptionMaterialController.update
 );

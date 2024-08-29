@@ -118,64 +118,81 @@ exports.index = async function (req, res) {
 };
 
 exports.get = function (req, res) {
-  const materialId = new mongoose.Types.ObjectId(req.params.material_id);
-  if (!materialId) {
-    return res.status(400).send({ message: "Invalid material id" });
-  }
+  try {
+    const materialId = new mongoose.Types.ObjectId(req.params.material_id);
+    if (!materialId) {
+      return res.status(400).send({ message: "Invalid material id" });
+    }
 
-  StorageMaterial.aggregate([
-    {
-      $match: {
-        _id: materialId,
+    StorageMaterial.aggregate([
+      {
+        $match: {
+          _id: materialId,
+        },
       },
-    },
-  ])
-    .then((cursor) => {
-      if (!cursor || !cursor.length) {
-        return res.status(404).send({ message: "Material not found" });
-      }
-      return res.json({
-        status: "success",
-        message: "Material retrieved successfully",
-        results: cursor[0],
+    ])
+      .then((cursor) => {
+        if (!cursor || !cursor.length) {
+          return res.status(404).send({ message: "Material not found" });
+        }
+        return res.json({
+          status: "success",
+          message: "Material retrieved successfully",
+          results: cursor[0],
+        });
+      })
+      .catch((error) => {
+        return res
+          .status(500)
+          .send({ message: "Internal server error", description: error });
       });
-    })
-    .catch((error) => {
-      return res
-        .status(500)
-        .send({ message: "Internal server error", description: error });
-    });
+  } catch (err) {
+    if (err) {
+      res.status(500).send({ message: err });
+      return;
+    }
+  }
 };
 
 // Handle update material from id
 exports.update = function (req, res) {
-  StorageMaterial.findById(req.params.material_id)
-    .then((material) => {
-      if (!material) res.status(404).send({ message: "material not found" });
+  try {
+    StorageMaterial.findById(req.params.material_id)
+      .then((material) => {
+        if (!material)
+          return res.status(404).send({ message: "material not found" });
 
-      // Iterate over the keys in the request body and update corresponding fields
-      Object.keys(req.body).forEach((key) => {
-        material[key] = req.body[key];
-      });
-
-      // save the material and check for errors
-      material
-        .save()
-        .then((updatedCar) => {
-          res.json({
-            message: "Storage Material updated",
-            results: updatedCar,
-          });
-        })
-        .catch((err) => {
-          res
-            .status(500)
-            .send({ message: err.message || "Error updating material" });
+        // Iterate over the keys in the request body and update corresponding fields
+        Object.keys(req.body).forEach((key) => {
+          material[key] = req.body[key];
         });
-    })
-    .catch((err) => {
-      res.status(500).send({ message: err.message || "Error finding material" });
-    });
+
+        // save the material and check for errors
+        material
+          .save()
+          .then((updatedCar) => {
+            res.json({
+              message: "Storage Material updated",
+              results: updatedCar,
+            });
+          })
+          .catch((err) => {
+            res
+              .status(500)
+              .send({ message: err.message || "Error updating material" });
+          });
+      })
+      .catch((err) => {
+        res
+          .status(500)
+          .send({ message: err.message || "Error finding material" });
+      });
+  } catch (err) {
+    if (err) {
+      res.status(500).send({ message: err });
+      return;
+    }
+  }
 };
 // Handle delete material
 exports.delete = function (req, res) {
@@ -202,7 +219,8 @@ exports.deleteAll = function (req, res) {
     .then(() => {
       res.json({
         status: "success",
-        message: "All materials deleted, prepare yourself, I'm going to kill you.",
+        message:
+          "All materials deleted, prepare yourself, I'm going to kill you.",
       });
     })
     .catch((err) => {

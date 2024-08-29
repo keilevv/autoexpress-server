@@ -3,37 +3,62 @@
 
 const { helpers } = require("../utils/helpers");
 const mongoose = require("mongoose");
-const ConsumptionMaterial = require("../models/storageMaterialModel");
+const ConsumptionMaterial = require("../models/consumptionMaterialModel");
+const StorageMaterial = require("../models/storageMaterialModel");
+const aggregations = require("./aggregations");
 
 exports.register = async (req, res) => {
   try {
-    let material = req.body.material;
-    let quantity = req.body.quantity;
-    quantity = Number(quantity);
+    const materials = req.body.materials;
+    if (!materials || materials.length === 0)
+      return res
+        .status(400)
+        .send({ message: "Ningun material válido asignado" });
 
-    if (typeof quantity !== "number") {
-      return res.status(400).json({ error: "Invalid data format." });
-    }
-
-    const consumptionMaterial = new ConsumptionMaterial({
-      quantity: quantity,
-      material: material,
-    });
-
-    consumptionMaterial.save().then((material) => {
-      if (material) {
-        res.send({
-          message: "Consumption material was registered successfully",
-          results: material,
-        });
-        return;
+    for (const material of materials) {
+      const storageMaterial = await StorageMaterial.findById(
+        material.material_id
+      );
+      if (!storageMaterial) {
+        return res.status(404).send({ message: "Material no encontrado" });
       }
-    });
-  } catch (err) {
-    if (err) {
-      res.status(500).send({ message: err });
-      return;
+
+      const existingConsumptionMaterial = await ConsumptionMaterial.findOne({
+        material: material.material_id,
+      });
+      if (
+        existingConsumptionMaterial &&
+        !existingConsumptionMaterial.archived
+      ) {
+        return res
+          .status(400)
+          .send({ message: "Material de consumo ya existente" });
+      }
+
+      if (material.quantity > storageMaterial.quantity) {
+        return res
+          .status(400)
+          .send({ message: "No hay suficientes materiales" });
+      }
+
+      storageMaterial.quantity -= material.quantity;
+      await storageMaterial.save();
+
+      const consumptionMaterial = new ConsumptionMaterial({
+        material: material.material_id,
+        quantity: material.quantity,
+      });
+
+      await consumptionMaterial.save();
     }
+
+    res
+      .status(201)
+      .send({ message: "Materiales de consumo creados exitosamente" });
+  } catch (err) {
+    res
+      .status(500)
+      .send({ message: "Internal server error", description: err });
   }
 };
 
@@ -71,6 +96,7 @@ exports.index = async function (req, res) {
       }
     });
   }
+
   // Apply sorting if any
   let sortOptions = {};
   if (sortBy && sortOrder) {
@@ -79,24 +105,29 @@ exports.index = async function (req, res) {
     sortOptions["date"] = 1;
   }
 
-  const totalMaterials = await ConsumptionMaterial.countDocuments(query);
-  const materials = await ConsumptionMaterial.aggregate([
-    { $match: query },
-    { $sort: sortOptions },
-    { $skip: (page - 1) * limit },
-    { $limit: parseInt(limit) },
-  ]).catch((err) => {
+  try {
+    const totalMaterials = await ConsumptionMaterial.countDocuments(query);
+
+    const materials = await ConsumptionMaterial.aggregate(
+      [
+        { $match: query },
+        { $sort: sortOptions },
+        { $skip: (page - 1) * limit },
+        { $limit: parseInt(limit) },
+      ].concat(aggregations.consumptionMaterialProjection)
+    );
+
+    return res.json({
+      status: "success",
+      message: "Materials list retrieved successfully",
+      count: totalMaterials,
+      results: materials,
+    });
+  } catch (err) {
     return res
       .status(500)
       .json({ message: "Internal server error", description: err });
-  });
-
-  return res.json({
-    status: "success",
-    message: "Materials list retrieved successfully",
-    count: totalMaterials,
-    results: materials,
-  });
+  }
 };
 
 exports.get = function (req, res) {
@@ -105,13 +136,15 @@ exports.get = function (req, res) {
     return res.status(400).send({ message: "Invalid material id" });
   }
 
-  ConsumptionMaterial.aggregate([
-    {
-      $match: {
-        _id: materialId,
+  ConsumptionMaterial.aggregate(
+    [
+      {
+        $match: {
+          _id: materialId,
+        },
       },
-    },
-  ])
+    ].concat(aggregations.consumptionMaterialProjection)
+  )
     .then((cursor) => {
       if (!cursor || !cursor.length) {
         return res.status(404).send({ message: "Material not found" });
@@ -130,36 +163,62 @@ exports.get = function (req, res) {
 };
 
 // Handle update material from id
-exports.update = function (req, res) {
-  ConsumptionMaterial.findById(req.params.material_id)
-    .then((material) => {
-      if (!material) res.status(404).send({ message: "material not found" });
+exports.update = async function (req, res) {
+  try {
+    const material = await ConsumptionMaterial.findById(req.params.material_id);
+    if (!material) {
+      return res.status(404).send({ message: "Material not found" });
+    }
+    Object.keys(req.body).forEach(async (key) => {
+      if (key === "material" || key === "quantity") {
+        const newQuantity = req.body.quantity;
+        const oldQuantity = material.quantity;
+        const difference = newQuantity - oldQuantity;
 
-      // Iterate over the keys in the request body and update corresponding fields
-      Object.keys(req.body).forEach((key) => {
-        material[key] = req.body[key];
-      });
+        const storageMaterial = await StorageMaterial.findById(
+          material.material
+        );
+        if (!storageMaterial) {
+          return res
+            .status(404)
+            .send({ message: "Material de almacenamiento no encontrado" });
+        }
+        // Check if there is enough storage material for the difference
+        if (difference > 0 && difference > storageMaterial.quantity) {
+          return res
+            .status(400)
+            .send({ message: "No hay suficientes materiales para actualizar" });
+        }
 
-      // save the material and check for errors
-      material
-        .save()
-        .then((updatedCar) => {
-          res.json({
-            message: "Storage Material updated",
-            results: updatedCar,
-          });
-        })
-        .catch((err) => {
-          res
-            .status(500)
-            .send({ message: err.message || "Error updating material" });
+        // Update the storage material quantity
+        storageMaterial.quantity -= difference;
+        await storageMaterial.save();
+
+        // Update the consumption material
+        material.quantity = newQuantity;
+        await material.save();
+        material.material = storageMaterial;
+
+        res.json({
+          message: "Material de consumo actualizado exitosamente",
+          results: material,
         });
-    })
-    .catch((err) => {
-      res
-        .status(500)
-        .send({ message: err.message || "Error finding material" });
+      }
+
+      if (key === "archived") {
+        material.archived = req.body.archived;
+        await material.save();
+        res.json({
+          message: "Material de consumo actualizado exitosamente",
+          results: material,
+        });
+      }
     });
+  } catch (err) {
+    res
+      .status(500)
+      .send({ message: "Internal server error", description: err.message });
+  }
 };
 // Handle delete material
 exports.delete = function (req, res) {
