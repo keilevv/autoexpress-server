@@ -10,6 +10,9 @@ var userSchema = mongoose.Schema({
     type: String,
     required: true,
   },
+  name: {
+    type: String,
+  },
   password: {
     type: String,
     required: true,
@@ -21,6 +24,7 @@ var userSchema = mongoose.Schema({
   roles: {
     type: String,
     required: true,
+    default: "user",
   },
   birthday: {
     type: Date,
