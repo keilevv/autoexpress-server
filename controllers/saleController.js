@@ -9,14 +9,12 @@ exports.register = async function (req, res) {
   try {
     const { materials, customer_name, user } = req.body;
 
-    // Create a new Sale instance
     const newSale = new Sale({
       materials,
       customer_name,
       user,
     });
 
-    // Save the new sale to the database
     const savedSale = await newSale.save({ session });
 
     for (const item of materials) {
@@ -33,7 +31,6 @@ exports.register = async function (req, res) {
         throw new Error(`Material with ID ${material} not found`);
       }
 
-      // Check if the updated quantity is below zero
       if (updatedMaterial.quantity < 0) {
         throw new Error(
           `Insufficient quantity for material with ID ${material}`
@@ -41,7 +38,6 @@ exports.register = async function (req, res) {
       }
     }
 
-    // Commit the transaction if everything is successful
     await session.commitTransaction();
     session.endSession();
 
@@ -67,7 +63,7 @@ exports.index = async function (req, res) {
 
   let query = {};
 
-  // Filter by material name if provided
+  // Apply filter by material name if provided
   if (materialName) {
     query["materials.material"] = {
       $regex: materialName,
@@ -86,11 +82,89 @@ exports.index = async function (req, res) {
   try {
     const totalSales = await Sale.countDocuments(query);
 
-    const sales = await Sale.find(query)
-      .populate("materials.material", "name price") // Populate material details
-      .sort(sortOptions)
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit));
+    // Use aggregation to perform lookups and match the query
+    const sales = await Sale.aggregate([
+      { $match: query }, // Match based on the query object
+
+      {
+        $unwind: "$materials", // Unwind the materials array for easier lookup
+      },
+      {
+        $lookup: {
+          from: "consumptionmaterials", // Collection name for ConsumptionMaterial
+          localField: "materials.material",
+          foreignField: "_id",
+          as: "materials.materialDetails",
+        },
+      },
+      {
+        $unwind: "$materials.materialDetails", // Unwind the materialDetails array
+      },
+      {
+        $lookup: {
+          from: "users", // Collection name for ConsumptionMaterial
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
+        },
+      },
+      {
+        $unwind: "$user", // Unwind the materialDetails array
+      },
+
+      // Lookup to fetch StorageMaterial details
+      {
+        $lookup: {
+          from: "storagematerials", // Collection name for StorageMaterial
+          localField: "materials.materialDetails.material",
+          foreignField: "_id",
+          as: "materials.materialDetails.storageMaterialDetails",
+        },
+      },
+      {
+        $unwind: "$materials.materialDetails.storageMaterialDetails", // Unwind storageMaterialDetails
+      },
+
+      // Group back by the sale id to reconstruct the sales with all material details
+      {
+        $group: {
+          _id: "$_id",
+          user: { $first: "$user" },
+          customer_name: { $first: "$customer_name" },
+          total_price: { $first: "$total_price" },
+          archived: { $first: "$archived" },
+          created_date: { $first: "$created_date" },
+          materials: {
+            $push: {
+              consumption_material_id: "$materials.material",
+              storage_material:
+                "$materials.materialDetails.storageMaterialDetails",
+              quantity: "$materials.quantity",
+              price: "$materials.price",
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          "user.email": 1,
+          "user.roles": 1,
+          "user._id": 1,
+          "user.username": 1,
+          customer_name: 1,
+          total_price: 1,
+          archived: 1,
+          created_date: 1,
+          materials: 1,
+        },
+      },
+
+      // Sort, Skip, and Limit
+      { $sort: sortOptions },
+      { $skip: (page - 1) * limit },
+      { $limit: parseInt(limit) },
+    ]);
 
     return res.json({
       status: "success",
@@ -173,36 +247,91 @@ exports.get = async function (req, res) {
 
 // Update Sale
 exports.update = async function (req, res) {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const saleId = req.params.id;
-    const { materials, customer_name } = req.body;
+    const { materials, customerName } = req.body;
 
-    // Find the sale by ID and update it
-    const updatedSale = await Sale.findByIdAndUpdate(
-      saleId,
-      {
-        materials,
-        customer_name,
-      },
-      { new: true } // Return the updated document
-    );
+    // Find the existing sale to get the original material quantities
+    const existingSale = await Sale.findById(saleId).session(session);
 
-    if (!updatedSale) {
+    if (!existingSale) {
       return res.status(404).json({
         status: "error",
         message: "Sale not found",
       });
     }
 
+    // Create a map of original materials
+    const originalMaterialMap = new Map();
+    for (const item of existingSale.materials) {
+      originalMaterialMap.set(item.material.toString(), item.quantity);
+    }
+
+    // Update the consumption materials based on the difference
+    for (const item of materials) {
+      const { material, quantity } = item;
+      const originalQuantity =
+        originalMaterialMap.get(material.toString()) || 0;
+      const quantityDifference = quantity - originalQuantity;
+
+      // Update the quantity of the corresponding consumption material
+      const updatedMaterial = await ConsumptionMaterial.findByIdAndUpdate(
+        material,
+        { $inc: { quantity: -quantityDifference } },
+        { new: true, session }
+      );
+
+      if (!updatedMaterial) {
+        throw new Error(`Material with ID ${material} not found`);
+      }
+
+      if (updatedMaterial.quantity < 0) {
+        throw new Error(
+          `Insufficient quantity for material with ID ${material}`
+        );
+      }
+
+      // Remove material from the map to keep track of processed items
+      originalMaterialMap.delete(material.toString());
+    }
+
+    // For remaining original materials not in the updated list, revert the quantities
+    for (const [
+      materialId,
+      originalQuantity,
+    ] of originalMaterialMap.entries()) {
+      await ConsumptionMaterial.findByIdAndUpdate(
+        materialId,
+        { $inc: { quantity: originalQuantity } },
+        { new: true, session }
+      );
+    }
+
+    // Update the sale with new materials and customer name
+    const updatedSale = await Sale.findByIdAndUpdate(
+      saleId,
+      { materials, customerName },
+      { new: true, session }
+    );
+
+    // Commit the transaction if everything is successful
+    await session.commitTransaction();
+    session.endSession();
+
     return res.json({
       status: "success",
-      message: "Sale updated successfully",
+      message: "Sale updated successfully and material quantities adjusted",
       data: updatedSale,
     });
   } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
     return res.status(500).json({
       status: "error",
-      message: "Error updating sale",
+      message: "Error updating sale and adjusting material quantities",
       description: err.message,
     });
   }

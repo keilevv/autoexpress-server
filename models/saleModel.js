@@ -30,7 +30,7 @@ var saleSchema = new mongoose.Schema({
     ref: "user",
     required: true,
   },
-  totalPrice: {
+  total_price: {
     type: Number,
     required: true,
     default: 0,
@@ -57,8 +57,8 @@ saleSchema.pre("save", async function (next) {
       total += item.price * item.quantity;
     }
 
-    // Assign the calculated total to totalPrice field
-    sale.totalPrice = total;
+    // Assign the calculated total to total_price field
+    sale.total_price = total;
 
     next();
   } catch (err) {
