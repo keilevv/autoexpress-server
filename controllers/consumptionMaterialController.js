@@ -67,35 +67,31 @@ exports.index = async function (req, res) {
 
   let query = {};
 
-  const filterArray = helpers.getFilterArray(filter);
-
+  // const filterArray = helpers.getFilterArray(filter);
   // Apply filtering if any
-  if (filter) {
-    filterArray.forEach((filterItem) => {
-      switch (filterItem.name) {
-        case "archived":
-          const archived = filterItem.value === "true" ? true : false;
-          query[filterItem.name] = archived;
-          break;
-        case "start_date":
-        case "end_date":
-          // Parse and add date filter to the query
-          const dateFilter = {};
-          if (req.query.start_date)
-            dateFilter["$gte"] = new Date(req.query.start_date);
-          if (req.query.end_date)
-            dateFilter["$lte"] = new Date(req.query.end_date);
-          query["created_date"] = dateFilter;
-          break;
-        default:
-          query[filterItem.name] = {
-            $regex: filterItem.value,
-            $options: "i",
-          };
-          break;
-      }
-    });
-  }
+  // filterArray.forEach((filterItem) => {
+  //   switch (filterItem.name) {
+  //     case "archived":
+  //       const archived = filterItem.value === "true" ? true : false;
+  //       query[filterItem.name] = archived;
+  //       break;
+  //     case "start_date":
+  //     case "end_date":
+  //       const dateFilter = {};
+  //       if (req.query.start_date)
+  //         dateFilter["$gte"] = new Date(req.query.start_date);
+  //       if (req.query.end_date)
+  //         dateFilter["$lte"] = new Date(req.query.end_date);
+  //       query["created_date"] = dateFilter;
+  //       break;
+  //     default:
+  //       query[filterItem.name] = {
+  //         $regex: filterItem.value,
+  //         $options: "i",
+  //       };
+  //       break;
+  //   }
+  // });
 
   // Apply sorting if any
   let sortOptions = {};
@@ -108,14 +104,34 @@ exports.index = async function (req, res) {
   try {
     const totalMaterials = await ConsumptionMaterial.countDocuments(query);
 
-    const materials = await ConsumptionMaterial.aggregate(
-      [
-        { $match: query },
-        { $sort: sortOptions },
-        { $skip: (page - 1) * limit },
-        { $limit: parseInt(limit) },
-      ].concat(aggregations.consumptionMaterialProjection)
-    );
+    const materials = await ConsumptionMaterial.aggregate([
+      { $match: query },
+      { $sort: sortOptions },
+      { $skip: (page - 1) * limit },
+      { $limit: parseInt(limit) },
+      {
+        $lookup: {
+          from: "storagematerials", // Ensure this is the correct collection name
+          localField: "material",
+          foreignField: "_id",
+          as: "material",
+        },
+      },
+      {
+        $unwind: "$material",
+      },
+      {
+        // Add filtering for material.name here
+        $match: filter.name
+          ? {
+              "material.name": {
+                $regex: filter.name,
+                $options: "i",
+              },
+            }
+          : {},
+      },
+    ]);
 
     return res.json({
       status: "success",
