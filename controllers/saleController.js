@@ -59,17 +59,9 @@ exports.register = async function (req, res) {
 
 // Index Sales with Filtering
 exports.index = async function (req, res) {
-  const { page = 1, limit = 10, materialName, sortBy, sortOrder } = req.query;
+  const { page = 1, limit = 10, customer_name, sortBy, sortOrder } = req.query;
 
   let query = {};
-
-  // Apply filter by material name if provided
-  if (materialName) {
-    query["materials.material"] = {
-      $regex: materialName,
-      $options: "i",
-    };
-  }
 
   // Apply sorting options if provided
   let sortOptions = {};
@@ -124,7 +116,11 @@ exports.index = async function (req, res) {
       {
         $unwind: "$materials.materialDetails.storageMaterialDetails", // Unwind storageMaterialDetails
       },
-
+      {
+        $match: customer_name
+          ? { customer_name: { $regex: customer_name, $options: "i" } }
+          : {},
+      },
       // Group back by the sale id to reconstruct the sales with all material details
       {
         $group: {
