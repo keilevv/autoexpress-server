@@ -4,8 +4,8 @@ StorageMaterial = require("../models/storageMaterialModel");
 // Users
 checkStorageMatererialByReference = (req, res, next) => {
   if (req.body.reference) {
-    req.body.reference = Number(req.body.reference);
-    if (typeof req.body.reference !== "number") {
+    req.body.reference = req.body.reference;
+    if (typeof req.body.reference !== "string") {
       res.status(400).send({
         message: "Formato de referencia inválido",
       });
