@@ -12,13 +12,12 @@ exports.register = async (req, res) => {
     let unit = req.body.unit;
     let quantity = req.body.quantity;
     let price = req.body.price;
-    reference = Number(reference);
     quantity = Number(quantity);
     price = Number(price);
 
     if (
       typeof name !== "string" ||
-      typeof reference !== "number" ||
+      typeof reference !== "string" ||
       typeof unit !== "string" ||
       typeof quantity !== "number" ||
       typeof price !== "number"

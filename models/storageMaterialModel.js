@@ -11,7 +11,7 @@ var storageMaterialSchema = mongoose.Schema({
     required: true,
   },
   reference: {
-    type: Number,
+    type: String,
     required: true,
   },
   unit: {
