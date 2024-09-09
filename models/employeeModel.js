@@ -1,7 +1,7 @@
 // userModel.js
 var mongoose = require("mongoose");
 // Setup schema
-var workerSchema = mongoose.Schema({
+var employeeSchema = mongoose.Schema({
   archived: {
     type: Boolean,
     default: false,
@@ -21,7 +21,7 @@ var workerSchema = mongoose.Schema({
 });
 
 // Export Info model
-var Worker = (module.exports = mongoose.model("worker", workerSchema));
+var Employee = (module.exports = mongoose.model("employee", employeeSchema));
 module.exports.get = function (callback, limit) {
-  Worker.find(callback).limit(limit);
+  Employee.find(callback).limit(limit);
 };

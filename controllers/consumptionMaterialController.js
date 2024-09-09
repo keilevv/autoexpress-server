@@ -67,31 +67,13 @@ exports.index = async function (req, res) {
 
   let query = {};
 
-  // const filterArray = helpers.getFilterArray(filter);
-  // Apply filtering if any
-  // filterArray.forEach((filterItem) => {
-  //   switch (filterItem.name) {
-  //     case "archived":
-  //       const archived = filterItem.value === "true" ? true : false;
-  //       query[filterItem.name] = archived;
-  //       break;
-  //     case "start_date":
-  //     case "end_date":
-  //       const dateFilter = {};
-  //       if (req.query.start_date)
-  //         dateFilter["$gte"] = new Date(req.query.start_date);
-  //       if (req.query.end_date)
-  //         dateFilter["$lte"] = new Date(req.query.end_date);
-  //       query["created_date"] = dateFilter;
-  //       break;
-  //     default:
-  //       query[filterItem.name] = {
-  //         $regex: filterItem.value,
-  //         $options: "i",
-  //       };
-  //       break;
-  //   }
-  // });
+  const filterArray = helpers.getFilterArray(filter);
+  filterArray.forEach((filterItem) => {
+    if (filterItem.name === "archived") {
+      const archived = filterItem.value === "true" ? true : false;
+      query[filterItem.name] = archived;
+    }
+  });
 
   // Apply sorting if any
   let sortOptions = {};
