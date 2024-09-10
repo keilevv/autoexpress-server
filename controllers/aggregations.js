@@ -136,4 +136,14 @@ exports.consumptionMaterialProjection = [
   },
 ];
 
-exports.getAppointmentByClientName = [{}];
+exports.jobOrderProjection = [
+  {
+    $lookup: {
+      from: "employees",
+      localField: "employee",
+      foreignField: "_id",
+      as: "employee",
+    },
+  },
+  { $unwind: "$employee" },
+];

@@ -1,6 +1,10 @@
 var mongoose = require("mongoose");
 // Setup schema
 var jobOrderSchema = mongoose.Schema({
+  archived: {
+    type: Boolean,
+    default: false,
+  },
   number: {
     type: String,
     required: true,

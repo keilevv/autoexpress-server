@@ -1,6 +1,8 @@
 // jobOrderController.js
 // Import Models
 JobOrder = require("../models/jobOrderModel");
+ConsumptionMaterial = require("../models/consumptionMaterialModel");
+const { jobOrderProjection } = require("./aggregations");
 
 const { helpers } = require("../utils/helpers");
 const mongoose = require("mongoose");
@@ -23,22 +25,24 @@ exports.register = async (req, res) => {
     const savedJobOrder = await jobOrder.save({ session });
 
     // Iterate over consumed materials and update consumptionMaterial quantities
-    for (const item of req.body.consumed_materials) {
-      const { material, quantity } = item;
+    if (req.body.consumed_materials && req.body.consumed_materials.length > 0) {
+      for (const item of req.body.consumed_materials) {
+        const { material, quantity } = item;
 
-      const updatedMaterial = await ConsumptionMaterial.findByIdAndUpdate(
-        material,
-        { $inc: { quantity: -quantity } },
-        { new: true, session }
-      );
-
-      // Check if quantity goes negative
-      if (!updatedMaterial || updatedMaterial.quantity < 0) {
-        throw new Error(
-          `Insufficient stock for material ID: ${material} (remaining quantity: ${
-            updatedMaterial ? updatedMaterial.quantity : 0
-          })`
+        const updatedMaterial = await ConsumptionMaterial.findByIdAndUpdate(
+          material,
+          { $inc: { quantity: -quantity } },
+          { new: true, session }
         );
+
+        // Check if quantity goes negative
+        if (!updatedMaterial || updatedMaterial.quantity < 0) {
+          throw new Error(
+            `Insufficient stock for material ID: ${material} (remaining quantity: ${
+              updatedMaterial ? updatedMaterial.quantity : 0
+            })`
+          );
+        }
       }
     }
 
@@ -104,15 +108,16 @@ exports.index = async function (req, res) {
     } else {
       sortOptions["date"] = 1;
     }
-
     const totalJobOrders = await JobOrder.countDocuments(query);
 
-    const jobOrder = await JobOrder.aggregate([
-      { $match: query },
-      { $sort: sortOptions },
-      { $skip: (page - 1) * limit },
-      { $limit: parseInt(limit) },
-    ]).catch((err) => {
+    const jobOrder = await JobOrder.aggregate(
+      [
+        { $match: query },
+        { $sort: sortOptions },
+        { $skip: (page - 1) * limit },
+        { $limit: parseInt(limit) },
+      ].concat(jobOrderProjection)
+    ).catch((err) => {
       return res
         .status(500)
         .json({ message: "Internal server error", description: err });
@@ -120,7 +125,7 @@ exports.index = async function (req, res) {
 
     return res.json({
       status: "success",
-      message: "Employees list retrieved successfully",
+      message: "Job orders list retrieved successfully",
       count: totalJobOrders,
       results: jobOrder,
     });
