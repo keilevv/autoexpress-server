@@ -135,5 +135,70 @@ exports.consumptionMaterialProjection = [
     },
   },
 ];
+exports.jobOrderProjection = [
+  {
+    $lookup: {
+      from: "employees", // Join with employees collection
+      localField: "employee",
+      foreignField: "_id",
+      as: "employee",
+    },
+  },
+  { $unwind: "$employee" },
+];
 
-exports.getAppointmentByClientName = [{}];
+exports.jobOrderProjectionMaterials = [
+  {
+    $lookup: {
+      from: "employees", // Join with employees collection
+      localField: "employee",
+      foreignField: "_id",
+      as: "employee",
+    },
+  },
+  { $unwind: "$employee" },
+  {
+    $unwind: "$consumed_materials", // Unwind the consumed_materials array to handle each item separately
+  },
+  {
+    $lookup: {
+      from: "consumptionmaterials", // Join with consumptionMaterial collection
+      localField: "consumed_materials.consumption_material",
+      foreignField: "_id",
+      as: "consumed_material_details",
+    },
+  },
+  {
+    $unwind: "$consumed_material_details", // Unwind the resulting consumption_material_details
+  },
+  {
+    $lookup: {
+      from: "storagematerials", // Join with storageMaterial collection
+      localField: "consumed_material_details.material",
+      foreignField: "_id",
+      as: "storage_material_details",
+    },
+  },
+  {
+    $unwind: "$storage_material_details", // Unwind storage_material_details to make it an object
+  },
+  {
+    $group: {
+      _id: "$_id",
+      archived: { $first: "$archived" },
+      number: { $first: "$number" },
+      due_date: { $first: "$due_date" },
+      employee: { $first: "$employee" },
+      car_plate: { $first: "$car_plate" },
+      status: { $first: "$status" },
+      consumed_materials: {
+        $push: {
+          quantity: "$consumed_materials.quantity",
+          consumption_material: "$consumed_material_details",
+          storage_material: "$storage_material_details",
+        },
+      },
+      created_date: { $first: "$created_date" },
+    },
+  },
+];
