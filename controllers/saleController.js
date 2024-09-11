@@ -1,6 +1,7 @@
 const Sale = require("../models/saleModel.js");
 const ConsumptionMaterial = require("../models/consumptionMaterialModel");
 const mongoose = require("mongoose");
+const { saleProjection } = require("./aggregations");
 
 exports.register = async function (req, res) {
   const session = await mongoose.startSession();
@@ -75,92 +76,20 @@ exports.index = async function (req, res) {
     const totalSales = await Sale.countDocuments(query);
 
     // Use aggregation to perform lookups and match the query
-    const sales = await Sale.aggregate([
-      { $match: query }, // Match based on the query object
-
-      {
-        $unwind: "$materials", // Unwind the materials array for easier lookup
-      },
-      {
-        $lookup: {
-          from: "consumptionmaterials", // Collection name for ConsumptionMaterial
-          localField: "materials.material",
-          foreignField: "_id",
-          as: "materials.materialDetails",
+    const sales = await Sale.aggregate(
+      [
+        { $match: query }, // Match based on the query object
+        // Sort, Skip, and Limit
+        { $sort: sortOptions },
+        { $skip: (page - 1) * limit },
+        { $limit: parseInt(limit) },
+        {
+          $match: customer_name
+            ? { customer_name: { $regex: customer_name, $options: "i" } }
+            : {},
         },
-      },
-      {
-        $unwind: "$materials.materialDetails", // Unwind the materialDetails array
-      },
-      {
-        $lookup: {
-          from: "users", // Collection name for ConsumptionMaterial
-          localField: "user",
-          foreignField: "_id",
-          as: "user",
-        },
-      },
-      {
-        $unwind: "$user", // Unwind the materialDetails array
-      },
-
-      // Lookup to fetch StorageMaterial details
-      {
-        $lookup: {
-          from: "storagematerials", // Collection name for StorageMaterial
-          localField: "materials.materialDetails.material",
-          foreignField: "_id",
-          as: "materials.materialDetails.storageMaterialDetails",
-        },
-      },
-      {
-        $unwind: "$materials.materialDetails.storageMaterialDetails", // Unwind storageMaterialDetails
-      },
-      {
-        $match: customer_name
-          ? { customer_name: { $regex: customer_name, $options: "i" } }
-          : {},
-      },
-      // Group back by the sale id to reconstruct the sales with all material details
-      {
-        $group: {
-          _id: "$_id",
-          user: { $first: "$user" },
-          customer_name: { $first: "$customer_name" },
-          total_price: { $first: "$total_price" },
-          archived: { $first: "$archived" },
-          created_date: { $first: "$created_date" },
-          materials: {
-            $push: {
-              consumption_material_id: "$materials.material",
-              storage_material:
-                "$materials.materialDetails.storageMaterialDetails",
-              quantity: "$materials.quantity",
-              price: "$materials.price",
-            },
-          },
-        },
-      },
-      {
-        $project: {
-          _id: 1,
-          "user.email": 1,
-          "user.roles": 1,
-          "user._id": 1,
-          "user.username": 1,
-          customer_name: 1,
-          total_price: 1,
-          archived: 1,
-          created_date: 1,
-          materials: 1,
-        },
-      },
-
-      // Sort, Skip, and Limit
-      { $sort: sortOptions },
-      { $skip: (page - 1) * limit },
-      { $limit: parseInt(limit) },
-    ]);
+      ].concat(saleProjection)
+    );
 
     return res.json({
       status: "success",
