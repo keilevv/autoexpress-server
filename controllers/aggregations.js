@@ -146,4 +146,44 @@ exports.jobOrderProjection = [
     },
   },
   { $unwind: "$employee" },
+  {
+    $lookup: {
+      from: "consumptionmaterials", // The name of your consumption material collection
+      localField: "consumed_materials.material",
+      foreignField: "_id",
+      as: "material_details",
+    },
+  },
+  {
+    $addFields: {
+      consumed_materials: {
+        $map: {
+          input: "$consumed_materials",
+          as: "item",
+          in: {
+            material: {
+              $arrayElemAt: [
+                {
+                  $filter: {
+                    input: "$material_details",
+                    as: "material",
+                    cond: {
+                      $eq: ["$$material._id", "$$item.material"],
+                    },
+                  },
+                },
+                0,
+              ],
+            },
+            quantity: "$$item.quantity",
+          },
+        },
+      },
+    },
+  },
+  {
+    $project: {
+      material_details: 0, // Remove the temporary material_details array
+    },
+  },
 ];

@@ -11,7 +11,7 @@ router.get(
 );
 
 router.get(
-  "/operations/job-orders/:material_id",
+  "/operations/job-orders/:job_order_id",
   [authJwt.verifyToken],
   jobOrderController.get
 );
@@ -21,17 +21,17 @@ router.post(
   jobOrderController.register
 );
 router.put(
-  "/operations/update/job-orders/:material_id",
+  "/operations/update/job-orders/:job_order_id",
   [authJwt.verifyToken],
   jobOrderController.update
 );
 router.put(
-  "/operations/job-orders/:material_id/add-materials",
+  "/operations/job-orders/:job_order_id/add-materials",
   [authJwt.verifyToken],
   jobOrderController.addConsumedMaterials
 );
 router.delete(
-  "/operations/delete/job-orders/:material_id",
+  "/operations/delete/job-orders/:job_order_id",
   [authJwt.verifyToken],
   jobOrderController.delete
 );

@@ -24,7 +24,7 @@ exports.register = async (req, res) => {
     // Save the job order first
     const savedJobOrder = await jobOrder.save({ session });
 
-    // Iterate over consumed materials and update consumptionMaterial quantities
+    // Iterate over consumed consumed_materials and update consumptionMaterial quantities
     if (req.body.consumed_materials && req.body.consumed_materials.length > 0) {
       for (const item of req.body.consumed_materials) {
         const { material, quantity } = item;
@@ -91,6 +91,16 @@ exports.index = async function (req, res) {
               dateFilter["$lte"] = new Date(req.query.end_date);
             query["created_date"] = dateFilter;
             break;
+          case "search":
+            if (filterItem.value) {
+              query["$or"] = [
+                { number: { $regex: filterItem.value, $options: "i" } },
+                {
+                  car_plate: { $regex: filterItem.value, $options: "i" },
+                },
+              ];
+            }
+            break;
           default:
             query[filterItem.name] = {
               $regex: filterItem.value,
@@ -137,8 +147,9 @@ exports.index = async function (req, res) {
 };
 
 exports.addConsumedMaterials = async (req, res) => {
+  const { job_order_id } = req.params;
   try {
-    const { job_order_id, consumed_materials } = req.body;
+    const { consumed_materials } = req.body; // consumed_materials is an array of { material_id, quantity }
 
     // Find the JobOrder by ID
     const jobOrder = await JobOrder.findById(job_order_id);
@@ -146,44 +157,68 @@ exports.addConsumedMaterials = async (req, res) => {
       return res.status(404).send({ message: "JobOrder not found" });
     }
 
-    // Iterate over consumed_materials and subtract from consumptionMaterials
     for (let materialItem of consumed_materials) {
       const consumptionMaterial = await ConsumptionMaterial.findById(
-        materialItem.materialId
+        materialItem.material_id
       );
       if (!consumptionMaterial) {
         return res.status(404).send({
-          message: `Material with ID ${materialItem.materialId} not found`,
+          message: `Material with ID ${materialItem.material_id} not found`,
         });
       }
 
-      // Check if enough quantity exists
-      if (consumptionMaterial.quantity < materialItem.quantity) {
-        return res.status(400).send({
-          message: `Not enough quantity for material ID ${materialItem.materialId}`,
+      // Find the material in the job order's consumed consumed_materials list
+      const existingMaterial = jobOrder.consumed_materials.find(
+        (item) => item.material.toString() === materialItem.material_id
+      );
+
+      let quantityDifference = 0;
+
+      if (existingMaterial) {
+        // If the material is already in the list, calculate the difference
+        quantityDifference = materialItem.quantity - existingMaterial.quantity;
+
+        if (quantityDifference > 0) {
+          // Subtract the difference from the consumptionMaterial stock
+          if (consumptionMaterial.quantity < quantityDifference) {
+            return res.status(400).send({
+              message: `Not enough quantity for material ID ${materialItem.material_id}`,
+            });
+          }
+          consumptionMaterial.quantity -= quantityDifference;
+        } else if (quantityDifference < 0) {
+          // Add the difference back to the consumptionMaterial stock
+          consumptionMaterial.quantity += Math.abs(quantityDifference);
+        }
+
+        // Update the quantity in the consumed_materials array
+        existingMaterial.quantity = materialItem.quantity;
+      } else {
+        // If it's a new material, just add it to the consumed_materials array
+        if (consumptionMaterial.quantity < materialItem.quantity) {
+          return res.status(400).send({
+            message: `Not enough quantity for material ID ${materialItem.material_id}`,
+          });
+        }
+
+        consumptionMaterial.quantity -= materialItem.quantity;
+        jobOrder.consumed_materials.push({
+          material: materialItem.material_id,
+          quantity: materialItem.quantity,
         });
       }
-
-      // Subtract the quantity
-      consumptionMaterial.quantity -= materialItem.quantity;
 
       // Save the updated consumption material
       await consumptionMaterial.save();
-
-      // Add the consumed material to the jobOrder's consumed_materials list
-      jobOrder.consumed_materials.push({
-        material: materialItem.materialId,
-        quantity: materialItem.quantity,
-      });
     }
 
-    // Save the updated jobOrder
+    // Save the updated job order
     await jobOrder.save();
 
     return res.send({
       message:
-        "Materials added and consumption consumed_materials updated successfully!",
-      jobOrder,
+        "Materials added/updated and consumption consumed_materials updated successfully!",
+      results: jobOrder,
     });
   } catch (error) {
     return res
@@ -194,18 +229,20 @@ exports.addConsumedMaterials = async (req, res) => {
 
 // Handle view jobOrder info
 exports.get = function (req, res) {
-  const jobOrderId = new mongoose.Types.ObjectId(req.params.job_order_id);
-  if (!jobOrderId) {
+  const job_order_id = new mongoose.Types.ObjectId(req.params.job_order_id);
+  if (!job_order_id) {
     return res.status(400).send({ message: "Invalid jobOrder id" });
   }
 
-  JobOrder.aggregate([
-    {
-      $match: {
-        _id: jobOrderId,
+  JobOrder.aggregate(
+    [
+      {
+        $match: {
+          _id: job_order_id,
+        },
       },
-    },
-  ])
+    ].concat(jobOrderProjection)
+  )
     .then((cursor) => {
       if (!cursor || !cursor.length) {
         return res.status(404).send({ message: "JobOrder not found" });
