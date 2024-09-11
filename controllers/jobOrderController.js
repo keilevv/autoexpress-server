@@ -4,7 +4,7 @@ JobOrder = require("../models/jobOrderModel");
 ConsumptionMaterial = require("../models/consumptionMaterialModel");
 const {
   jobOrderProjection,
-  jobOrderWithConsumedMaterialsProjection,
+  jobOrderProjectionMaterials,
 } = require("./aggregations");
 
 const { helpers } = require("../utils/helpers");
@@ -129,7 +129,7 @@ exports.index = async function (req, res) {
         { $sort: sortOptions },
         { $skip: (page - 1) * limit },
         { $limit: parseInt(limit) },
-      ].concat(jobOrderProjection)
+      ].concat(jobOrderProjectionMaterials)
     ).catch((err) => {
       return res
         .status(500)
@@ -162,17 +162,18 @@ exports.addConsumedMaterials = async (req, res) => {
 
     for (let materialItem of consumed_materials) {
       const consumptionMaterial = await ConsumptionMaterial.findById(
-        materialItem.material_id
+        materialItem.consumption_material
       );
       if (!consumptionMaterial) {
         return res.status(404).send({
-          message: `Material with ID ${materialItem.material_id} not found`,
+          message: `Material with ID ${materialItem.consumption_material} not found`,
         });
       }
-
       // Find the material in the job order's consumed consumed_materials list
       const existingMaterial = jobOrder.consumed_materials.find(
-        (item) => item.material.toString() === materialItem.material_id
+        (item) =>
+          item.consumption_material.toString() ===
+          materialItem.consumption_material
       );
 
       let quantityDifference = 0;
@@ -185,7 +186,7 @@ exports.addConsumedMaterials = async (req, res) => {
           // Subtract the difference from the consumptionMaterial stock
           if (consumptionMaterial.quantity < quantityDifference) {
             return res.status(400).send({
-              message: `Not enough quantity for material ID ${materialItem.material_id}`,
+              message: `Not enough quantity for material ID ${materialItem.consumption_material}`,
             });
           }
           consumptionMaterial.quantity -= quantityDifference;
@@ -200,13 +201,13 @@ exports.addConsumedMaterials = async (req, res) => {
         // If it's a new material, just add it to the consumed_materials array
         if (consumptionMaterial.quantity < materialItem.quantity) {
           return res.status(400).send({
-            message: `Not enough quantity for material ID ${materialItem.material_id}`,
+            message: `Not enough quantity for material ID ${materialItem.consumption_material}`,
           });
         }
 
         consumptionMaterial.quantity -= materialItem.quantity;
         jobOrder.consumed_materials.push({
-          material: materialItem.material_id,
+          consumption_material: materialItem.consumption_material,
           quantity: materialItem.quantity,
         });
       }
@@ -244,7 +245,7 @@ exports.get = function (req, res) {
           _id: job_order_id,
         },
       },
-    ].concat(jobOrderWithConsumedMaterialsProjection)
+    ].concat(jobOrderProjectionMaterials)
   )
     .then((cursor) => {
       if (!cursor || !cursor.length) {

@@ -1,5 +1,6 @@
 var mongoose = require("mongoose");
-// Setup schema
+
+// Setup job order schema
 var jobOrderSchema = mongoose.Schema({
   archived: {
     type: Boolean,
@@ -30,12 +31,12 @@ var jobOrderSchema = mongoose.Schema({
     {
       consumption_material: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "consumptionMaterial",
+        ref: "consumptionMaterial", // Reference to consumptionMaterial
+        required: true,
       },
-
       quantity: {
         type: Number,
-        min: 0,
+        required: true, // Quantity of the consumed material
       },
     },
   ],
@@ -45,7 +46,7 @@ var jobOrderSchema = mongoose.Schema({
   },
 });
 
-// Export Info model
+// Export JobOrder model
 var JobOrder = (module.exports = mongoose.model("jobOrder", jobOrderSchema));
 module.exports.get = function (callback, limit) {
   JobOrder.find(callback).limit(limit);

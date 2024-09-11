@@ -135,64 +135,22 @@ exports.consumptionMaterialProjection = [
     },
   },
 ];
-
 exports.jobOrderProjection = [
   {
     $lookup: {
-      from: "employees",
+      from: "employees", // Join with employees collection
       localField: "employee",
       foreignField: "_id",
       as: "employee",
     },
   },
   { $unwind: "$employee" },
-  {
-    $lookup: {
-      from: "consumptionmaterials", // The name of your consumption material collection
-      localField: "consumed_materials.material",
-      foreignField: "_id",
-      as: "material_details",
-    },
-  },
-  {
-    $addFields: {
-      consumed_materials: {
-        $map: {
-          input: "$consumed_materials",
-          as: "item",
-          in: {
-            material: {
-              $arrayElemAt: [
-                {
-                  $filter: {
-                    input: "$material_details",
-                    as: "material",
-                    cond: {
-                      $eq: ["$$material._id", "$$item.material"],
-                    },
-                  },
-                },
-                0,
-              ],
-            },
-            quantity: "$$item.quantity",
-          },
-        },
-      },
-    },
-  },
-  {
-    $project: {
-      material_details: 0, // Remove the temporary material_details array
-    },
-  },
 ];
 
-
-exports.jobOrderWithConsumedMaterialsProjection = [
+exports.jobOrderProjectionMaterials = [
   {
     $lookup: {
-      from: "employees",
+      from: "employees", // Join with employees collection
       localField: "employee",
       foreignField: "_id",
       as: "employee",
@@ -200,47 +158,47 @@ exports.jobOrderWithConsumedMaterialsProjection = [
   },
   { $unwind: "$employee" },
   {
+    $unwind: "$consumed_materials", // Unwind the consumed_materials array to handle each item separately
+  },
+  {
     $lookup: {
-      from: "consumptionmaterials", // Lookup for consumption materials
-      localField: "consumed_materials.material",
+      from: "consumptionmaterials", // Join with consumptionMaterial collection
+      localField: "consumed_materials.consumption_material",
       foreignField: "_id",
-      as: "material_details",
+      as: "consumed_material_details",
     },
   },
   {
-    $unwind: "$material_details", // Unwind to access individual consumption material details
+    $unwind: "$consumed_material_details", // Unwind the resulting consumption_material_details
   },
   {
     $lookup: {
-      from: "storagematerials", // Lookup for storage materials
-      localField: "material_details.material",
+      from: "storagematerials", // Join with storageMaterial collection
+      localField: "consumed_material_details.material",
       foreignField: "_id",
       as: "storage_material_details",
     },
   },
   {
-    $unwind: "$storage_material_details", // Unwind to get storage material details
+    $unwind: "$storage_material_details", // Unwind storage_material_details to make it an object
   },
   {
-    $addFields: {
+    $group: {
+      _id: "$_id",
+      archived: { $first: "$archived" },
+      number: { $first: "$number" },
+      due_date: { $first: "$due_date" },
+      employee: { $first: "$employee" },
+      car_plate: { $first: "$car_plate" },
+      status: { $first: "$status" },
       consumed_materials: {
-        $map: {
-          input: "$consumed_materials", // Iterate through consumed_materials array
-          as: "item",
-          in: {
-            consumption_material: "$material_details", // Assign the matched material details
-            quantity: "$$item.quantity", // Use the quantity from JobOrder consumed_materials
-            storage_material: "$storage_material_details", // Add storage material details
-          },
+        $push: {
+          quantity: "$consumed_materials.quantity",
+          consumption_material: "$consumed_material_details",
+          storage_material: "$storage_material_details",
         },
       },
-    },
-  },
-  {
-    $project: {
-      material_details: 0, // Remove temporary material_details array
-      storage_material_details: 0, // Remove temporary storage_material_details array
+      created_date: { $first: "$created_date" },
     },
   },
 ];
-
