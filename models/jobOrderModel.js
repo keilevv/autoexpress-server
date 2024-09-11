@@ -28,10 +28,11 @@ var jobOrderSchema = mongoose.Schema({
   ],
   consumed_materials: [
     {
-      material: {
+      consumption_material: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "consumptionMaterial",
       },
+
       quantity: {
         type: Number,
         min: 0,

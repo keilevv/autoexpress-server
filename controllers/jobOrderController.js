@@ -2,7 +2,10 @@
 // Import Models
 JobOrder = require("../models/jobOrderModel");
 ConsumptionMaterial = require("../models/consumptionMaterialModel");
-const { jobOrderProjection } = require("./aggregations");
+const {
+  jobOrderProjection,
+  jobOrderWithConsumedMaterialsProjection,
+} = require("./aggregations");
 
 const { helpers } = require("../utils/helpers");
 const mongoose = require("mongoose");
@@ -241,7 +244,7 @@ exports.get = function (req, res) {
           _id: job_order_id,
         },
       },
-    ].concat(jobOrderProjection)
+    ].concat(jobOrderWithConsumedMaterialsProjection)
   )
     .then((cursor) => {
       if (!cursor || !cursor.length) {

@@ -187,3 +187,60 @@ exports.jobOrderProjection = [
     },
   },
 ];
+
+
+exports.jobOrderWithConsumedMaterialsProjection = [
+  {
+    $lookup: {
+      from: "employees",
+      localField: "employee",
+      foreignField: "_id",
+      as: "employee",
+    },
+  },
+  { $unwind: "$employee" },
+  {
+    $lookup: {
+      from: "consumptionmaterials", // Lookup for consumption materials
+      localField: "consumed_materials.material",
+      foreignField: "_id",
+      as: "material_details",
+    },
+  },
+  {
+    $unwind: "$material_details", // Unwind to access individual consumption material details
+  },
+  {
+    $lookup: {
+      from: "storagematerials", // Lookup for storage materials
+      localField: "material_details.material",
+      foreignField: "_id",
+      as: "storage_material_details",
+    },
+  },
+  {
+    $unwind: "$storage_material_details", // Unwind to get storage material details
+  },
+  {
+    $addFields: {
+      consumed_materials: {
+        $map: {
+          input: "$consumed_materials", // Iterate through consumed_materials array
+          as: "item",
+          in: {
+            consumption_material: "$material_details", // Assign the matched material details
+            quantity: "$$item.quantity", // Use the quantity from JobOrder consumed_materials
+            storage_material: "$storage_material_details", // Add storage material details
+          },
+        },
+      },
+    },
+  },
+  {
+    $project: {
+      material_details: 0, // Remove temporary material_details array
+      storage_material_details: 0, // Remove temporary storage_material_details array
+    },
+  },
+];
+
