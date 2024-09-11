@@ -123,13 +123,13 @@ exports.index = async function (req, res) {
     }
     const totalJobOrders = await JobOrder.countDocuments(query);
 
-    const jobOrder = await JobOrder.aggregate(
+    const jobOrders = await JobOrder.aggregate(
       [
         { $match: query },
         { $sort: sortOptions },
         { $skip: (page - 1) * limit },
         { $limit: parseInt(limit) },
-      ].concat(jobOrderProjectionMaterials)
+      ].concat(jobOrderProjection)
     ).catch((err) => {
       return res
         .status(500)
@@ -140,7 +140,7 @@ exports.index = async function (req, res) {
       status: "success",
       message: "Job orders list retrieved successfully",
       count: totalJobOrders,
-      results: jobOrder,
+      results: jobOrders,
     });
   } catch (err) {
     return res

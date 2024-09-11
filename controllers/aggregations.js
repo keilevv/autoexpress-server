@@ -158,7 +158,10 @@ exports.jobOrderProjectionMaterials = [
   },
   { $unwind: "$employee" },
   {
-    $unwind: "$consumed_materials", // Unwind the consumed_materials array to handle each item separately
+    $unwind: {
+      path: "$consumed_materials",
+      preserveNullAndEmptyArrays: true, // Keep documents even if consumed_materials is empty
+    },
   },
   {
     $lookup: {
@@ -169,7 +172,10 @@ exports.jobOrderProjectionMaterials = [
     },
   },
   {
-    $unwind: "$consumed_material_details", // Unwind the resulting consumption_material_details
+    $unwind: {
+      path: "$consumed_material_details",
+      preserveNullAndEmptyArrays: true, // Keep documents even if there is no consumption_material_details
+    },
   },
   {
     $lookup: {
@@ -180,7 +186,10 @@ exports.jobOrderProjectionMaterials = [
     },
   },
   {
-    $unwind: "$storage_material_details", // Unwind storage_material_details to make it an object
+    $unwind: {
+      path: "$storage_material_details",
+      preserveNullAndEmptyArrays: true, // Keep documents even if there is no storage_material_details
+    },
   },
   {
     $group: {
@@ -199,6 +208,79 @@ exports.jobOrderProjectionMaterials = [
         },
       },
       created_date: { $first: "$created_date" },
+    },
+  },
+];
+
+exports.saleProjection = [
+  {
+    $unwind: "$materials", // Unwind the materials array for easier lookup
+  },
+  {
+    $lookup: {
+      from: "consumptionmaterials", // Collection name for ConsumptionMaterial
+      localField: "materials.material",
+      foreignField: "_id",
+      as: "materials.materialDetails",
+    },
+  },
+  {
+    $unwind: "$materials.materialDetails", // Unwind the materialDetails array
+  },
+  {
+    $lookup: {
+      from: "users", // Collection name for ConsumptionMaterial
+      localField: "user",
+      foreignField: "_id",
+      as: "user",
+    },
+  },
+  {
+    $unwind: "$user", // Unwind the materialDetails array
+  },
+  // Lookup to fetch StorageMaterial details
+  {
+    $lookup: {
+      from: "storagematerials", // Collection name for StorageMaterial
+      localField: "materials.materialDetails.material",
+      foreignField: "_id",
+      as: "materials.materialDetails.storageMaterialDetails",
+    },
+  },
+  {
+    $unwind: "$materials.materialDetails.storageMaterialDetails", // Unwind storageMaterialDetails
+  },
+  // Group back by the sale id to reconstruct the sales with all material details
+  {
+    $group: {
+      _id: "$_id",
+      user: { $first: "$user" },
+      customer_name: { $first: "$customer_name" },
+      total_price: { $first: "$total_price" },
+      archived: { $first: "$archived" },
+      created_date: { $first: "$created_date" },
+      materials: {
+        $push: {
+          consumption_material_id: "$materials.material",
+          storage_material: "$materials.materialDetails.storageMaterialDetails",
+          quantity: "$materials.quantity",
+          price: "$materials.price",
+        },
+      },
+    },
+  },
+  {
+    $project: {
+      _id: 1,
+      "user.email": 1,
+      "user.roles": 1,
+      "user._id": 1,
+      "user.username": 1,
+      customer_name: 1,
+      total_price: 1,
+      archived: 1,
+      created_date: 1,
+      materials: 1,
     },
   },
 ];
