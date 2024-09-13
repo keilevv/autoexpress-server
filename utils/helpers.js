@@ -20,3 +20,10 @@ exports.helpers = {
     }
   },
 };
+
+exports.colorCodingList = [
+  {
+    name: "",
+    value: "",
+  },
+];
