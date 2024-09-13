@@ -104,12 +104,22 @@ exports.index = async function (req, res) {
       },
       {
         // Add filtering for material.name here
-        $match: filter.name
+        $match: filter.search
           ? {
-              "material.name": {
-                $regex: filter.name,
-                $options: "i",
-              },
+              $or: [
+                {
+                  "material.name": {
+                    $regex: filter.search,
+                    $options: "i",
+                  },
+                },
+                {
+                  "material.reference": {
+                    $regex: filter.search,
+                    $options: "i",
+                  },
+                },
+              ],
             }
           : {},
       },
