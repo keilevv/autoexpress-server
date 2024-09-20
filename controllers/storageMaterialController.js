@@ -79,12 +79,12 @@ exports.index = async function (req, res) {
             dateFilter["$lte"] = new Date(req.query.end_date);
           query["created_date"] = dateFilter;
           break;
-        default:
-          query[filterItem.name] = {
-            $regex: filterItem.value,
-            $options: "i",
-          };
-          break;
+
+        case "search":
+          query["$or"] = [
+            { name: { $regex: filterItem.value, $options: "i" } },
+            { reference: { $regex: filterItem.value, $options: "i" } },
+          ];
       }
     });
   }
