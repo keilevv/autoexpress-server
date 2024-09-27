@@ -150,7 +150,7 @@ exports.jobOrderProjection = [
 exports.jobOrderProjectionMaterials = [
   {
     $lookup: {
-      from: "employees", // Join with employees collection
+      from: "employees",
       localField: "employee",
       foreignField: "_id",
       as: "employee",
@@ -160,12 +160,12 @@ exports.jobOrderProjectionMaterials = [
   {
     $unwind: {
       path: "$consumed_materials",
-      preserveNullAndEmptyArrays: true, // Keep documents even if consumed_materials is empty
+      preserveNullAndEmptyArrays: true,
     },
   },
   {
     $lookup: {
-      from: "consumptionmaterials", // Join with consumptionMaterial collection
+      from: "consumptionmaterials",
       localField: "consumed_materials.consumption_material",
       foreignField: "_id",
       as: "consumed_material_details",
@@ -174,12 +174,12 @@ exports.jobOrderProjectionMaterials = [
   {
     $unwind: {
       path: "$consumed_material_details",
-      preserveNullAndEmptyArrays: true, // Keep documents even if there is no consumption_material_details
+      preserveNullAndEmptyArrays: true,
     },
   },
   {
     $lookup: {
-      from: "storagematerials", // Join with storageMaterial collection
+      from: "storagematerials",
       localField: "consumed_material_details.material",
       foreignField: "_id",
       as: "storage_material_details",
@@ -188,7 +188,7 @@ exports.jobOrderProjectionMaterials = [
   {
     $unwind: {
       path: "$storage_material_details",
-      preserveNullAndEmptyArrays: true, // Keep documents even if there is no storage_material_details
+      preserveNullAndEmptyArrays: true,
     },
   },
   {
@@ -200,6 +200,15 @@ exports.jobOrderProjectionMaterials = [
       employee: { $first: "$employee" },
       car_plate: { $first: "$car_plate" },
       status: { $first: "$status" },
+      consumed_colors: {
+        $first: {
+          $cond: {
+            if: { $eq: ["$consumed_colors", []] }, // Handle empty consumed_colors
+            then: [],
+            else: "$consumed_colors",
+          },
+        },
+      },
       consumed_materials: {
         $push: {
           quantity: "$consumed_materials.quantity",
@@ -208,6 +217,18 @@ exports.jobOrderProjectionMaterials = [
         },
       },
       created_date: { $first: "$created_date" },
+    },
+  },
+  {
+    $addFields: {
+      // Ensure consumed_materials is empty if there are no valid entries
+      consumed_materials: {
+        $cond: {
+          if: { $eq: ["$consumed_materials", [{}]] }, // Check for empty object in consumed_materials
+          then: [],
+          else: "$consumed_materials",
+        },
+      },
     },
   },
 ];
