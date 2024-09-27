@@ -38,6 +38,16 @@ var jobOrderSchema = mongoose.Schema({
         type: Number,
         required: true, // Quantity of the consumed material
       },
+      price: {
+        type: Number,
+      },
+    },
+  ],
+  consumed_colors: [
+    {
+      name: { type: String, required: true },
+      quantity: { type: Number, required: true },
+      price: { type: Number },
     },
   ],
   created_date: {

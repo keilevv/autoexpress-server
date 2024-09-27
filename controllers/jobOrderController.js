@@ -21,7 +21,6 @@ exports.register = async (req, res) => {
       employee: req.body.employee,
       car_plate: req.body.car_plate,
       status: ["pending"],
-      consumed_materials: [],
     });
 
     // Save the job order first
@@ -152,7 +151,7 @@ exports.index = async function (req, res) {
 exports.addConsumedMaterials = async (req, res) => {
   const { job_order_id } = req.params;
   try {
-    const { consumed_materials } = req.body; // consumed_materials is an array of { material_id, quantity }
+    const { consumed_materials, consumed_colors } = req.body; // consumed_materials is an array of { material_id, quantity }
 
     // Find the JobOrder by ID
     const jobOrder = await JobOrder.findById(job_order_id);
@@ -160,6 +159,41 @@ exports.addConsumedMaterials = async (req, res) => {
       return res.status(404).send({ message: "JobOrder not found" });
     }
 
+    // If consumed_colors is provided, update it
+    if (typeof consumed_colors === "object") {
+      jobOrder.consumed_colors = consumed_colors;
+    }
+
+    // Get the current consumed materials in the job order
+    const previousConsumedMaterials = [...jobOrder.consumed_materials];
+
+    // Create a set of the new consumed material IDs for easier comparison
+    const consumedMaterialSet = new Set(
+      consumed_materials.map((item) => item.consumption_material.toString())
+    );
+
+    // Filter out materials that are no longer in the consumed_materials list
+    const removedMaterials = previousConsumedMaterials.filter(
+      (item) => !consumedMaterialSet.has(item.consumption_material.toString())
+    );
+
+    // Add the quantity of removed materials back to the corresponding ConsumptionMaterial stock
+    for (let removedItem of removedMaterials) {
+      const consumptionMaterial = await ConsumptionMaterial.findById(
+        removedItem.consumption_material
+      );
+      if (consumptionMaterial) {
+        consumptionMaterial.quantity += removedItem.quantity;
+        await consumptionMaterial.save();
+      }
+    }
+
+    // Update the jobOrder's consumed_materials list by removing items not in the new list
+    jobOrder.consumed_materials = jobOrder.consumed_materials.filter((item) =>
+      consumedMaterialSet.has(item.consumption_material.toString())
+    );
+
+    // Process the new consumed materials
     for (let materialItem of consumed_materials) {
       const consumptionMaterial = await ConsumptionMaterial.findById(
         materialItem.consumption_material
@@ -169,13 +203,13 @@ exports.addConsumedMaterials = async (req, res) => {
           message: `Material with ID ${materialItem.consumption_material} not found`,
         });
       }
-      // Find the material in the job order's consumed consumed_materials list
+
+      // Find the material in the job order's consumed_materials list
       const existingMaterial = jobOrder.consumed_materials.find(
         (item) =>
           item.consumption_material.toString() ===
           materialItem.consumption_material
       );
-
       let quantityDifference = 0;
 
       if (existingMaterial) {
@@ -221,7 +255,7 @@ exports.addConsumedMaterials = async (req, res) => {
 
     return res.send({
       message:
-        "Materials added/updated and consumption consumed_materials updated successfully!",
+        "Materials added/updated and consumption materials updated successfully!",
       results: jobOrder,
     });
   } catch (error) {
