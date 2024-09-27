@@ -4,6 +4,9 @@
 const { helpers } = require("../utils/helpers");
 const mongoose = require("mongoose");
 const StorageMaterial = require("../models/storageMaterialModel");
+const fs = require("fs");
+const path = require("path");
+const csv = require("csv-parser");
 
 exports.register = async (req, res) => {
   try {
@@ -224,5 +227,64 @@ exports.deleteAll = function (req, res) {
     })
     .catch((err) => {
       if (err) res.status(500).send({ message: err });
+    });
+};
+
+// Controller to upload and process the CSV file
+exports.uploadStorageMaterials = (req, res) => {
+  const filePath = path.join(
+    __dirname,
+    "../utils/uploads/autoexpress_inventory.csv"
+  ); // Adjust path if needed
+
+  const storageMaterials = [];
+  console.log("filePath", filePath);
+  const parsePrice = (priceString) => {
+    if (priceString.trim() === "$ -") {
+      return 0; // If the price is "$ -", set it to 0
+    }
+
+    // Remove the currency symbol, commas, and spaces
+    const cleanedPrice = priceString
+      .replace(/\s/g, "") // Remove spaces
+      .replace("$", "") // Remove dollar sign
+      .replace(",", "") // Remove commas
+      .split(".")[0]; // Remove everything after the decimal point
+
+    return parseInt(cleanedPrice); // Convert to integer
+  };
+
+  // Read and parse the CSV file
+  fs.createReadStream(filePath)
+    .pipe(csv())
+    .on("data", (row) => {
+      try {
+        // Clean and map CSV data to model fields
+        if (row.Categoría === "Complementos") {
+          const material = {
+            name: row.Producto,
+            reference: row.Código,
+            unit: row.Medida === "UNIDAD" ? "unit" : row.Medida, // Convert "UNIDAD" to "unit"
+            quantity: parseFloat(row.Cantidad), // Ensure quantity is a number
+            price: parsePrice(row[" Precio "]), // Convert price to an integer
+          };
+          storageMaterials.push(material);
+        }
+      } catch (error) {
+        console.error("Error processing row: ", error);
+      }
+    })
+    .on("end", () => {
+      StorageMaterial.insertMany(storageMaterials)
+        .then(() =>
+          res
+            .status(200)
+            .json({ message: "Storage materials uploaded successfully!" })
+        )
+        .catch((err) =>
+          res
+            .status(500)
+            .json({ error: "Error uploading storage materials", details: err })
+        );
     });
 };

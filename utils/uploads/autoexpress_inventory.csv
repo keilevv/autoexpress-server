@@ -1,0 +1,156 @@
+# Control,Fecha,Factura,ID Proveedor,Proveedor,Código,Categoría,Producto,Medida,Cantidad, Precio , Descuento , SubTotal , Impuesto , Total ,Comentario
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50669237,Línea 35 - Tintas,35-M01 Resina Poliéster Transparente ,UNIDAD,3," $ 231,355.00 ", $ -   ," $ 694,065.00 ", $ -   ," $ 694,065.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53232870,Línea 35 - Tintas,35-M05 Aditivo de Efecto ,UNIDAD,1," $ 319,332.00 ", $ -   ," $ 319,332.00 ", $ -   ," $ 319,332.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53220892,Línea 35 - Tintas,35-M1010 Blanco ,UNIDAD,2," $ 335,694.00 ", $ -   ," $ 671,388.00 ", $ -   ," $ 671,388.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50612436,Línea 35 - Tintas,35-M1021 Blanco Piedra ,UNIDAD,0," $ 200,491.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53221104,Línea 35 - Tintas,35-M1110 Ocre Oro ,UNIDAD,1, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53377349,Línea 35 - Tintas,35-M1120 Ocre ,UNIDAD,0," $ 69,430.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50529321,Línea 35 - Tintas,35-M1130 Amarillo Sol,UNIDAD,0," $ 242,062.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53378091,Línea 35 - Tintas,35-M1140 Amarillo Limón ,UNIDAD,1," $ 159,497.00 ", $ -   ," $ 159,497.00 ", $ -   ," $ 159,497.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53378462,Línea 35 - Tintas,35-M1150 Amarillo ,UNIDAD,0," $ 191,396.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50514418,Línea 35 - Tintas,35-M1160 Amarillo Anaranjado,UNIDAD,0," $ 120,094.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50445585,Línea 35 - Tintas,35-M1170 Amarillo Verdoso Limpio,UNIDAD,0," $ 296,477.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53387790,Línea 35 - Tintas,35-M1220 Naranja Claro ,UNIDAD,0," $ 121,151.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50744127,Línea 35 - Tintas,35-M1230 Naranja transparente,UNIDAD,0," $ 172,926.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53389698,Línea 35 - Tintas,35-M1310 Rojo Transparente ,UNIDAD,0," $ 209,752.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53389910,Línea 35 - Tintas,35-M1320 Rojo Oxido ,UNIDAD,1," $ 58,431.00 ", $ -   ," $ 58,431.00 ", $ -   ," $ 58,431.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53389592,Línea 35 - Tintas,35-M1330 Rojo Anaranjado Claro ,UNIDAD,1," $ 160,932.00 ", $ -   ," $ 160,932.00 ", $ -   ," $ 160,932.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53390069,Línea 35 - Tintas,35-M1340 Rojo Claro ,UNIDAD,1," $ 72,330.00 ", $ -   ," $ 72,330.00 ", $ -   ," $ 72,330.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53222270,Línea 35 - Tintas,35-M1350 Marrón ,UNIDAD,0," $ 229,642.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53390175,Línea 35 - Tintas,35-M1360 Rojo ,UNIDAD,3," $ 150,082.00 ", $ -   ," $ 450,246.00 ", $ -   ," $ 450,246.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53402895,Línea 35 - Tintas,35-M1370 Rojo Oscuro ,UNIDAD,2," $ 79,563.00 ", $ -   ," $ 159,126.00 ", $ -   ," $ 159,126.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50654257,Línea 35 - Tintas,35-M1390 Rojo Puro,UNIDAD,3," $ 197,499.00 ", $ -   ," $ 592,497.00 ", $ -   ," $ 592,497.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50352431,Línea 35 - Tintas,35-M1411 Violeta ,UNIDAD,1," $ 151,992.00 ", $ -   ," $ 151,992.00 ", $ -   ," $ 151,992.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53222800,Línea 35 - Tintas,35-M1420 Violeta Rojizo ,UNIDAD,0," $ 179,745.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53222588,Línea 35 - Tintas,35-M1430 Rojo Magenta ,UNIDAD,1," $ 142,610.00 ", $ -   ," $ 142,610.00 ", $ -   ," $ 142,610.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,52335846,Línea 35 - Tintas,35-M1511 Azul          ,UNIDAD,0," $ 127,598.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53404008,Línea 35 - Tintas,35-M1516 Azul Helio ,UNIDAD,2," $ 67,554.00 ", $ -   ," $ 135,108.00 ", $ -   ," $ 135,108.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50385877,Línea 35 - Tintas,35-M1521 Azul Océano ,UNIDAD,0," $ 150,115.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53223224,Línea 35 - Tintas,35-M1530 Azul Transparente ,UNIDAD,1," $ 121,971.00 ", $ -   ," $ 121,971.00 ", $ -   ," $ 121,971.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50471272,Línea 35 - Tintas,35-M1541 Azul Indio II,UNIDAD,1," $ 516,017.00 ", $ -   ," $ 516,017.00 ", $ -   ," $ 516,017.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53223436,Línea 35 - Tintas,35-M1610 Verde Azuloso ,UNIDAD,0," $ 123,167.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50471220,Línea 35 - Tintas,35-M1621 Verde Amarillento,UNIDAD,0," $ 185,768.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53223648,Línea 35 - Tintas,35-M1910 Negro ,UNIDAD,1," $ 368,491.00 ", $ -   ," $ 368,491.00 ", $ -   ," $ 368,491.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53223754,Línea 35 - Tintas,35-M1920 Negro Entonador ,UNIDAD,2," $ 103,251.00 ", $ -   ," $ 206,502.00 ", $ -   ," $ 206,502.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53404485,Línea 35 - Tintas,35-M1990 Negro Grafito ,UNIDAD,0," $ 106,111.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53404697,Línea 35 - Tintas,35-M211 Aluminio Superfino,UNIDAD,0," $ 76,936.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53224125,Línea 35 - Tintas,35-M212 Alum. Extrafino ,UNIDAD,2," $ 313,330.00 ", $ -   ," $ 626,660.00 ", $ -   ," $ 626,660.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53224231,Línea 35 - Tintas,35-M213 Aluminio Medio ,UNIDAD,1," $ 318,994.00 ", $ -   ," $ 318,994.00 ", $ -   ," $ 318,994.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53224337,Línea 35 - Tintas,35-M214 Aluminio Brillante ,UNIDAD,1," $ 431,577.00 ", $ -   ," $ 431,577.00 ", $ -   ," $ 431,577.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53224443,Línea 35 - Tintas,35-M215 Aluminio Brillante Grueso ,UNIDAD,1," $ 167,005.00 ", $ -   ," $ 167,005.00 ", $ -   ," $ 167,005.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53224549,Línea 35 - Tintas,35-M216 Aluminio Grueso ,UNIDAD,2," $ 140,734.00 ", $ -   ," $ 281,468.00 ", $ -   ," $ 281,468.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53405227,Línea 35 - Tintas,35-M217 Alumino Extragrueso,UNIDAD,5," $ 97,577.00 ", $ -   ," $ 487,885.00 ", $ -   ," $ 487,885.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50445765,Línea 35 - Tintas,35-M218 Aluminio Medio Brillante ,UNIDAD,2," $ 172,633.00 ", $ -   ," $ 345,266.00 ", $ -   ," $ 345,266.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50345493,Línea 35 - Tintas,35-M300 Perla Multiefecto Blanca Fina,UNIDAD,0," $ 164,852.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53224867,Línea 35 - Tintas,35-M302 Perla Blanca ,UNIDAD,1," $ 189,482.00 ", $ -   ," $ 189,482.00 ", $ -   ," $ 189,482.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50487095,Línea 35 - Tintas,35-M311 Perla Amarilla,UNIDAD,0," $ 219,545.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53434960,Línea 35 - Tintas,35-M312 Perla Multiefecto Verde,UNIDAD,0," $ 140,734.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53435490,Línea 35 - Tintas,35-M313 Perla Multiefecto Oro Fino ,UNIDAD,0," $ 215,792.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53435702,Línea 35 - Tintas,35-M314 Perla Multiefecto Aluminio Delgado ,UNIDAD,0, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,54464538,Línea 35 - Tintas,35-M331 Rojo Rubí  ,UNIDAD,0," $ 234,556.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53425897,Línea 35 - Tintas,35-M332 Perla Multiefecto Roja  ,UNIDAD,1," $ 238,309.00 ", $ -   ," $ 238,309.00 ", $ -   ," $ 238,309.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53426798,Línea 35 - Tintas,35-M341 Perla Multiefecto Violeta,UNIDAD,1," $ 148,240.00 ", $ -   ," $ 148,240.00 ", $ -   ," $ 148,240.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53426003,Línea 35 - Tintas,35-M343 Perla Café Rojo ,UNIDAD,1," $ 120,094.00 ", $ -   ," $ 120,094.00 ", $ -   ," $ 120,094.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53225715,Línea 35 - Tintas,35-M351 Perla Azul ,UNIDAD,1," $ 200,778.00 ", $ -   ," $ 200,778.00 ", $ -   ," $ 200,778.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53434854,Línea 35 - Tintas,35-M352 Perla Azul Fina ,UNIDAD,1," $ 103,205.00 ", $ -   ," $ 103,205.00 ", $ -   ," $ 103,205.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53435119,Línea 35 - Tintas,35-M353 Perla Multiefecto Turquesa ,UNIDAD,0," $ 345,263.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53435225,Línea 35 - Tintas,35-M381 Perla Multiefecto Cobre ,UNIDAD,0," $ 172,054.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53426692,Línea 35 - Tintas,35-M382 Perla Roja Fina ,UNIDAD,0," $ 127,598.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,54464750,Línea 35 - Tintas,35-M391 Plata Diamante ,UNIDAD,1," $ 285,218.00 ", $ -   ," $ 285,218.00 ", $ -   ," $ 285,218.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50649627,Línea 35 - Tintas,35-M590 Negro Puro,UNIDAD,0," $ 143,886.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50649673,Línea 35 - Tintas,35-M599 Chrome,UNIDAD,1," $ 150,937.00 ", $ -   ," $ 150,937.00 ", $ -   ," $ 150,937.00 ",Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50490057,Línea 49 - Perlas,49-W408 Perla Multiefecto Blanca Cristal,UNIDAD,0," $ 118,162.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50394624,Línea 49 - Perlas,49-W410 Perla Multiefecto Dorada ,UNIDAD,0," $ 299,355.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50392869,Línea 49 - Perlas,49-W420 Perla Multiefecto Bronce ,UNIDAD,0," $ 286,094.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50394626,Línea 49 - Perlas,49-W425 Perla Multiefecto Naranja ,UNIDAD,0," $ 133,915.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50509840,Línea 49 - Perlas,49-W436 Perla Multiefecto Verde,UNIDAD,0," $ 125,715.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50529326,Línea 49 - Perlas,49-W441 Perla Multiefecto Violeta,UNIDAD,0," $ 364,190.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50398339,Línea 49 - Perlas,49-W443 Perla Multiefecto Violeta Brillante,UNIDAD,0," $ 437,664.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50494804,Línea 49 - Perlas,49-W448 Perla Multiefecto Rojo Intenso,UNIDAD,0," $ 286,094.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50395339,Línea 49 - Perlas,49-W455 Perla Multiefecto Azul Zafiro,UNIDAD,0," $ 284,197.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50395606,Línea 49 - Perlas,49-W460 Perla Multiefecto Verde Esmeralda ,UNIDAD,0," $ 498,292.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50395465,Línea 49 - Perlas,49-W463 Perla Multiefecto Verde Intenso ,UNIDAD,0," $ 286,094.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50394648,Línea 49 - Perlas,49-W488 Perla Multiefecto Coral ,UNIDAD,0," $ 314,511.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50569900,Línea 49 - Perlas,49-W511 Perla Multiefecto Dorada ,UNIDAD,0," $ 776,943.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50569895,Línea 49 - Perlas,49-W513 Perla Multiefecto Amarillo Durazno,UNIDAD,0," $ 189,013.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50654435,Línea 49 - Perlas,49-W516 Perla Multiefecto Verde Plateado ,UNIDAD,0," $ 687,105.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50569896,Línea 49 - Perlas,49-W530 Perla Multiefecto Rojo extremo,UNIDAD,0," $ 1,301,523.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50757989,Línea 49 - Perlas,49-W534 Perla Multiefecto Rojo metálico,UNIDAD,0," $ 374,024.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50570651,Línea 49 - Perlas,49-W535 Perla Multiefecto Magenta Extremo,UNIDAD,0," $ 1,297,706.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50654695,Línea 49 - Perlas,49-W544 Perla Multiefecto Magenta,UNIDAD,0," $ 304,903.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50569898,Línea 49 - Perlas,49-W550 Perla Multiefecto Azul Extremo,UNIDAD,0," $ 1,222,113.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50651014,Línea 49 - Perlas,49-W553 Perla Multiefecto Azul puro ,UNIDAD,0," $ 515,177.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50649674,Línea 49 - Perlas,49-W554 Perla Multiefecto Azul metálico ,UNIDAD,0," $ 384,163.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50570652,Línea 49 - Perlas,49-W556 Perla Multiefecto Azul Violeta,UNIDAD,0," $ 1,317,035.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50570653,Línea 49 - Perlas,49-W560 Perla Multiefecto Tropical ,UNIDAD,0," $ 516,365.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50569899,Línea 49 - Perlas,49-W564 Perla Multiefecto Verde Extremo,UNIDAD,0," $ 874,037.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50570640,Línea 49 - Perlas,49-W580 Perla Multiefecto Chocolate,UNIDAD,0," $ 217,530.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50654715,Línea 49 - Perlas,49-W598 Perla Multiefecto Nacar,UNIDAD,0," $ 947,842.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53232764,Línea 30 - Tintas,"30-S00 Resina PU 3,5L",UNIDAD,0," $ 251,854.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50583699,Línea 30 - Tintas,"30-S01 Resina PU CV 3,5L",UNIDAD,0," $ 294,992.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53174464,Línea 30 - Tintas,"30-S010 Blanco 3,5L",UNIDAD,0," $ 340,044.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50493089,Línea 30 - Tintas,30-S110 Amarillo Verdoso 1L,UNIDAD,0," $ 319,293.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53174676,Línea 30 - Tintas,30-S120 Amarillo Vivo 1L,UNIDAD,0," $ 176,482.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53175100,Línea 30 - Tintas,30-S150 Naranja Claro 1L,UNIDAD,0," $ 220,657.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53174994,Línea 30 - Tintas,30-S160 Amarillo Oscuro 1L,UNIDAD,0," $ 70,367.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53175206,Línea 30 - Tintas,30-S220 Naranja 1L,UNIDAD,0," $ 174,137.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53175418,Línea 30 - Tintas,30-S230 Rojo Vivo 1L,UNIDAD,0," $ 132,819.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53176584,Línea 30 - Tintas,30-S310 Rojo Café 1L,UNIDAD,0," $ 101,237.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53175524,Línea 30 - Tintas,30-S320 Rojo Brillante 1L,UNIDAD,0," $ 124,868.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53175630,Línea 30 - Tintas,30-S330 Rojo Púrpura 1L,UNIDAD,0," $ 392,906.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53175736,Línea 30 - Tintas,30-S340 Rojo Oscuro 1L,UNIDAD,0," $ 194,420.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50352432,Línea 30 - Tintas,30-S411 Púrpura 1L,UNIDAD,0," $ 156,169.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53175842,Línea 30 - Tintas,30-S420 Rojo 1L,UNIDAD,0," $ 189,297.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50430617,Línea 30 - Tintas,30-S511 Azul Rojizo 1L,UNIDAD,0," $ 185,739.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53176160,Línea 30 - Tintas,30-S520 Azul Verdoso 1L,UNIDAD,0," $ 109,168.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53176266,Línea 30 - Tintas,30-S530 Azul 1L,UNIDAD,0," $ 102,889.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53176372,Línea 30 - Tintas,30-S610 Verde Azulado 1L,UNIDAD,0," $ 102,127.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50457627,Línea 30 - Tintas,30-S621 Verde Amarilloso 1L,UNIDAD,0," $ 239,415.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53176690,Línea 30 - Tintas,30-S910 Negro 1L,UNIDAD,0," $ 69,900.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,53176796,Línea 30 - Tintas,30-S920 Negro Profundo 1L,UNIDAD,0," $ 259,887.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50583094,Línea 30 - Tintas,"51-515 Endurecedor CV rápido 2,5L",UNIDAD,0," $ 364,199.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50583096,Línea 30 - Tintas,"51-520 Endurecedor CV Normal 2,5L",UNIDAD,0," $ 203,049.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50583129,Línea 30 - Tintas,"51-530 Endurecedor CV lento 2,5L",UNIDAD,0," $ 374,878.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,57015904,Complementos,40-10 Barniz Secado Rápido,UNIDAD,0," $ 70,800.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50758680,Complementos,40-22 Barniz Universal,UNIDAD,0," $ 64,344.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50758791,Complementos,40-22 Barniz Universal x 5,UNIDAD,0," $ 364,199.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50433979,Complementos,20-34 Primer Blanco 2K x 4 ,UNIDAD,0," $ 370,796.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50466909,Complementos,20-34 Primer Blanco 2K x 1,UNIDAD,0," $ 94,780.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50466845,Complementos,20-94 Primer Negro 2K x 4 ,UNIDAD,0," $ 337,542.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50467291,Complementos,20-94 Primer Negro 2K x 1 ,UNIDAD,0," $ 86,464.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50491330,Complementos,"50-15 Endurecedor Rápido x 0,5",UNIDAD,0," $ 46,539.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,52882064,Complementos,"50-15 Endurecedor Rápido x 2,5",UNIDAD,0," $ 215,434.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,54667156,Complementos,"50-20 Endurecedor Normal x 0,5",UNIDAD,0," $ 46,079.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50909298,Complementos,"50-20 Endurecedor Normal x 2,5 ",UNIDAD,0," $ 265,672.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,54597091,Complementos,70-10 Limpiador de Siliconas,UNIDAD,0," $ 158,145.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,50102836,Complementos,60-10 Thinner Rápido,UNIDAD,0," $ 94,967.00 ", $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,11111,Complementos,522-10 Primer para Plástico,UNIDAD,1, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,11112,Complementos,285-38 Base húmedo sobre Humedo Negro,UNIDAD,1, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,11113,Complementos,352-500 Difuminador Barniz,UNIDAD,1, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,11114,Complementos,Discos 150,UNIDAD,50, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,11115,Complementos,Discos 220,UNIDAD,50, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,11116,Complementos,Discos 400,UNIDAD,50, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,11117,Complementos,Discos 600,UNIDAD,50, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,11118,Complementos,Discos 800,UNIDAD,50, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,22221,Complementos,Barniz 1/4,UNIDAD,34, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,22222,Complementos,Masilla,UNIDAD,21, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,22223,Complementos,Cintas enmascarar,UNIDAD,42, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+1,02/08/2024,InvInicial,Inv,Inventario Inicial,22224,Complementos,Sellantes,UNIDAD,14, $ -   , $ -   , $ -   , $ -   , $ -   ,Inventario Inicial
+2,15/08/2024,545458,1003,otro,11114,Complementos,Discos 150,UNIDAD,45," $ 3,200.00 ", $ -   ," $ 144,000.00 "," $ 27,360.00 "," $ 171,360.00 ",
+2,15/08/2024,545458,1003,otro,11115,Complementos,Discos 220,UNIDAD,65," $ 3,200.00 ", $ -   ," $ 208,000.00 "," $ 39,520.00 "," $ 247,520.00 ",
+2,15/08/2024,545458,1003,otro,11116,Complementos,Discos 400,UNIDAD,63," $ 3,200.00 ", $ -   ," $ 201,600.00 "," $ 38,304.00 "," $ 239,904.00 ",
+2,15/08/2024,545458,1003,otro,11117,Complementos,Discos 600,UNIDAD,54," $ 3,200.00 ", $ -   ," $ 172,800.00 "," $ 32,832.00 "," $ 205,632.00 ",
+2,15/08/2024,545458,1003,otro,11118,Complementos,Discos 800,UNIDAD,68," $ 3,200.00 ", $ -   ," $ 217,600.00 "," $ 41,344.00 "," $ 258,944.00 ",
+3,15/08/2024,54545,1003,otro,556545,Complementos,Discos 320,UNIDAD,18," $ 3,200.00 ", $ -   ," $ 57,600.00 "," $ 10,944.00 "," $ 68,544.00 ",
+3,15/08/2024,54545,1003,otro,55455,Complementos,Discos 1200,UNIDAD,100," $ 3,200.00 ", $ -   ," $ 320,000.00 "," $ 60,800.00 "," $ 380,800.00 ",
+4,15/08/2024,56545,1003,otro,1010101,Complementos,Lija 80,UNIDAD,6," $ 1,500.00 ", $ -   ," $ 9,000.00 "," $ 1,710.00 "," $ 10,710.00 ",
+4,15/08/2024,56545,1003,otro,5564465,Complementos,lija 320,UNIDAD,48," $ 1,500.00 ", $ -   ," $ 72,000.00 "," $ 13,680.00 "," $ 85,680.00 ",
+4,15/08/2024,56545,1003,otro,654615456,Complementos,lija 400,UNIDAD,50," $ 1,500.00 ", $ -   ," $ 75,000.00 "," $ 14,250.00 "," $ 89,250.00 ",
+4,15/08/2024,56545,1003,otro,65655,Complementos,lija 600,UNIDAD,58," $ 1,500.00 ", $ -   ," $ 87,000.00 "," $ 16,530.00 "," $ 103,530.00 ",
+4,15/08/2024,56545,1003,otro,5645615651,Complementos,lija 1200,UNIDAD,7," $ 2,600.00 ", $ -   ," $ 18,200.00 "," $ 3,458.00 "," $ 21,658.00 ",
+4,15/08/2024,56545,1003,otro,16515,Complementos,lija 1500,UNIDAD,16," $ 2,600.00 ", $ -   ," $ 41,600.00 "," $ 7,904.00 "," $ 49,504.00 ",
+4,15/08/2024,56545,1003,otro,6544565,Complementos,lija 3000,UNIDAD,69," $ 2,600.00 ", $ -   ," $ 179,400.00 "," $ 34,086.00 "," $ 213,486.00 ",
+5,20/08/2024,vpb18322,1004,motoreste,11114,Complementos,Discos 150,UNIDAD,50," $ 3,200.00 ", $ -   ," $ 160,000.00 "," $ 30,400.00 "," $ 190,400.00 ",
+6,20/08/2024,vpb18322,1004,motoreste,607,Complementos,disco 180,UNIDAD,50," $ 3,200.00 ", $ -   ," $ 160,000.00 "," $ 30,400.00 "," $ 190,400.00 ",
+7,20/08/2024,vpb18322,1004,motoreste,pin47690,Complementos,Enmascarado plastico rollo ,UNIDAD,2," $ 290,000.00 ", $ -   ," $ 580,000.00 "," $ 110,200.00 "," $ 690,200.00 ",
+8,20/08/2024,vpb18322,1004,motoreste,22223,Complementos,Cintas enmascarar,UNIDAD,48," $ 8,600.00 ", $ -   ," $ 412,000.00 "," $ 78,280.00 "," $ 490,280.00 ",
