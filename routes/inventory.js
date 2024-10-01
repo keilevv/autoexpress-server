@@ -31,6 +31,12 @@ router.delete(
   [authJwt.verifyToken],
   storageMaterialController.delete
 );
+
+router.post(
+  "/operations/load-storage-materials",
+  [authJwt.verifyToken],
+  storageMaterialController.uploadStorageMaterials
+);
 /*WARNING: This will delete all materials, use only on dev environment */
 // router.delete("/delete-all", [authJwt.verifyToken], storageMaterialController.deleteAll);
 
@@ -63,22 +69,14 @@ router.delete(
 
 // sales routes
 
-router.get(
-  "/operations/sales",
-  [authJwt.verifyToken],
-  saleController.index
-);
+router.get("/operations/sales", [authJwt.verifyToken], saleController.index);
 
 router.get(
   "/operations/sales/:sale_id",
   [authJwt.verifyToken],
   saleController.get
 );
-router.post(
-  "/register-sale",
-  [authJwt.verifyToken],
-  saleController.register
-);
+router.post("/register-sale", [authJwt.verifyToken], saleController.register);
 router.put(
   "/operations/update/sales/:sale_id",
   [authJwt.verifyToken],
