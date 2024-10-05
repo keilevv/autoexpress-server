@@ -82,15 +82,23 @@ exports.index = async function (req, res) {
             dateFilter["$lte"] = new Date(req.query.end_date);
           query["created_date"] = dateFilter;
           break;
-
         case "search":
+          // Search by name or reference
           query["$or"] = [
             { name: { $regex: filterItem.value, $options: "i" } },
             { reference: { $regex: filterItem.value, $options: "i" } },
           ];
+          break;
+        default:
+          query[filterItem.name] = {
+            $regex: filterItem.value,
+            $options: "i",
+          };
+          break;
       }
     });
   }
+
   // Apply sorting if any
   let sortOptions = {};
   if (sortBy && sortOrder) {
@@ -99,24 +107,36 @@ exports.index = async function (req, res) {
     sortOptions["date"] = 1;
   }
 
-  const totalMaterials = await StorageMaterial.countDocuments(query);
-  const materials = await StorageMaterial.aggregate([
-    { $match: query },
-    { $sort: sortOptions },
-    { $skip: (page - 1) * limit },
-    { $limit: parseInt(limit) },
-  ]).catch((err) => {
+  try {
+    const materials = await StorageMaterial.aggregate([
+      { $match: query }, // Match the base query first
+      {
+        $facet: {
+          paginatedResults: [
+            { $sort: sortOptions },
+            { $skip: (page - 1) * limit },
+            { $limit: parseInt(limit) },
+          ],
+          totalCount: [{ $count: "count" }],
+        },
+      },
+    ]);
+
+    const totalMaterials =
+      materials[0].totalCount.length > 0 ? materials[0].totalCount[0].count : 0;
+    const results = materials[0].paginatedResults;
+
+    return res.json({
+      status: "success",
+      message: "Materials list retrieved successfully",
+      count: totalMaterials,
+      results,
+    });
+  } catch (err) {
     return res
       .status(500)
       .json({ message: "Internal server error", description: err });
-  });
-
-  return res.json({
-    status: "success",
-    message: "Materials list retrieved successfully",
-    count: totalMaterials,
-    results: materials,
-  });
+  }
 };
 
 exports.get = function (req, res) {

@@ -66,14 +66,44 @@ exports.index = async function (req, res) {
   const { page = 1, limit = 10, sortBy, sortOrder, ...filter } = req.query;
 
   let query = {};
+  let materialNameFilter = {}; // Separate filter for material.name
 
   const filterArray = helpers.getFilterArray(filter);
-  filterArray.forEach((filterItem) => {
-    if (filterItem.name === "archived") {
-      const archived = filterItem.value === "true" ? true : false;
-      query[filterItem.name] = archived;
-    }
-  });
+
+  // Apply filtering if any
+  if (filter) {
+    filterArray.forEach((filterItem) => {
+      switch (filterItem.name) {
+        case "archived":
+          const archived = filterItem.value === "true" ? true : false;
+          query[filterItem.name] = archived;
+          break;
+        case "start_date":
+        case "end_date":
+          // Parse and add date filter to the query
+          const dateFilter = {};
+          if (req.query.start_date)
+            dateFilter["$gte"] = new Date(req.query.start_date);
+          if (req.query.end_date)
+            dateFilter["$lte"] = new Date(req.query.end_date);
+          query["created_date"] = dateFilter;
+          break;
+        case "search":
+          // Store material.name filter separately
+          materialNameFilter["material.name"] = {
+            $regex: filterItem.value,
+            $options: "i",
+          };
+          break;
+        default:
+          query[filterItem.name] = {
+            $regex: filterItem.value,
+            $options: "i",
+          };
+          break;
+      }
+    });
+  }
 
   // Apply sorting if any
   let sortOptions = {};
@@ -84,13 +114,8 @@ exports.index = async function (req, res) {
   }
 
   try {
-    const totalMaterials = await ConsumptionMaterial.countDocuments(query);
-
     const materials = await ConsumptionMaterial.aggregate([
-      { $match: query },
-      { $sort: sortOptions },
-      { $skip: (page - 1) * limit },
-      { $limit: parseInt(limit) },
+      { $match: query }, // Match the base query first
       {
         $lookup: {
           from: "storagematerials", // Ensure this is the correct collection name
@@ -99,37 +124,30 @@ exports.index = async function (req, res) {
           as: "material",
         },
       },
+      { $unwind: "$material" },
+      // Apply material.name filter after lookup
+      { $match: materialNameFilter },
       {
-        $unwind: "$material",
-      },
-      {
-        // Add filtering for material.name here
-        $match: filter.search
-          ? {
-              $or: [
-                {
-                  "material.name": {
-                    $regex: filter.search,
-                    $options: "i",
-                  },
-                },
-                {
-                  "material.reference": {
-                    $regex: filter.search,
-                    $options: "i",
-                  },
-                },
-              ],
-            }
-          : {},
+        $facet: {
+          paginatedResults: [
+            { $sort: sortOptions },
+            { $skip: (page - 1) * limit },
+            { $limit: parseInt(limit) },
+          ],
+          totalCount: [{ $count: "count" }],
+        },
       },
     ]);
+
+    const totalMaterials =
+      materials[0].totalCount.length > 0 ? materials[0].totalCount[0].count : 0;
+    const results = materials[0].paginatedResults;
 
     return res.json({
       status: "success",
       message: "Materials list retrieved successfully",
       count: totalMaterials,
-      results: materials,
+      results,
     });
   } catch (err) {
     return res
