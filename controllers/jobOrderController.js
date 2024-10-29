@@ -103,11 +103,11 @@ exports.index = async function (req, res) {
               ];
             }
             break;
-          default:
-            query[filterItem.name] = {
-              $regex: filterItem.value,
-              $options: "i",
-            };
+
+          case "employee":
+            if (filterItem.value) {
+              query["employee"] = new mongoose.Types.ObjectId(filterItem.value);
+            }
             break;
         }
       });
@@ -122,14 +122,13 @@ exports.index = async function (req, res) {
     }
     const totalJobOrders = await JobOrder.countDocuments(query);
 
-    const jobOrders = await JobOrder.aggregate(
-      [
-        { $match: query },
-        { $sort: sortOptions },
-        { $skip: (page - 1) * limit },
-        { $limit: parseInt(limit) },
-      ].concat(jobOrderProjection)
-    ).catch((err) => {
+    const jobOrders = await JobOrder.aggregate([
+      { $match: query },
+      { $sort: sortOptions },
+      { $skip: (page - 1) * limit },
+      { $limit: parseInt(limit) },
+      ...jobOrderProjectionMaterials,
+    ]).catch((err) => {
       return res
         .status(500)
         .json({ message: "Internal server error", description: err });
