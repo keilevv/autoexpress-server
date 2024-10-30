@@ -75,7 +75,6 @@ exports.index = async function (req, res) {
     let query = {};
 
     const filterArray = helpers.getFilterArray(filter);
-    // Apply filtering if any
     if (filter) {
       filterArray.forEach((filterItem) => {
         switch (filterItem.name) {
@@ -85,7 +84,6 @@ exports.index = async function (req, res) {
             break;
           case "start_date":
           case "end_date":
-            // Parse and add date filter to the query
             const dateFilter = {};
             if (req.query.start_date)
               dateFilter["$gte"] = new Date(req.query.start_date);
@@ -97,13 +95,10 @@ exports.index = async function (req, res) {
             if (filterItem.value) {
               query["$or"] = [
                 { number: { $regex: filterItem.value, $options: "i" } },
-                {
-                  car_plate: { $regex: filterItem.value, $options: "i" },
-                },
+                { car_plate: { $regex: filterItem.value, $options: "i" } },
               ];
             }
             break;
-
           case "employee":
             if (filterItem.value) {
               query["employee"] = new mongoose.Types.ObjectId(filterItem.value);
@@ -113,21 +108,64 @@ exports.index = async function (req, res) {
       });
     }
 
-    // Apply sorting if any
     let sortOptions = {};
     if (sortBy && sortOrder) {
       sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
     } else {
       sortOptions["date"] = 1;
     }
+
     const totalJobOrders = await JobOrder.countDocuments(query);
 
+    // Aggregation to calculate total price for all documents matching the filter
+    const totalPriceResult = await JobOrder.aggregate([
+      { $match: query },
+      {
+        $addFields: {
+          consumedMaterialsTotal: {
+            $sum: {
+              $map: {
+                input: "$consumed_materials",
+                as: "material",
+                in: {
+                  $multiply: [
+                    "$$material.quantity",
+                    "$$material.storage_material.price",
+                  ],
+                },
+              },
+            },
+          },
+          consumedColorsTotal: {
+            $sum: {
+              $map: {
+                input: "$consumed_colors",
+                as: "color",
+                in: "$$color.price",
+              },
+            },
+          },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          total_price: {
+            $sum: { $add: ["$consumedMaterialsTotal", "$consumedColorsTotal"] },
+          },
+        },
+      },
+    ]);
+
+    const total_price = totalPriceResult[0]?.total_price || 0;
+
+    // Retrieve paginated results with projection for the requested page
     const jobOrders = await JobOrder.aggregate([
       { $match: query },
       { $sort: sortOptions },
       { $skip: (page - 1) * limit },
       { $limit: parseInt(limit) },
-      ...jobOrderProjectionMaterials,
+      ...jobOrderProjectionMaterials, // Assuming this projection includes needed fields
     ]).catch((err) => {
       return res
         .status(500)
@@ -135,10 +173,11 @@ exports.index = async function (req, res) {
     });
 
     return res.json({
-      status: "success",
-      message: "Job orders list retrieved successfully",
       count: totalJobOrders,
+      total_price,
+      message: "Job orders list retrieved successfully",
       results: jobOrders,
+      status: "success",
     });
   } catch (err) {
     return res
