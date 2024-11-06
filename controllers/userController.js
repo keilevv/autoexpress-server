@@ -70,23 +70,32 @@ exports.getByName = function (req, res) {
 };
 // Handle update user user
 exports.update = function (req, res) {
+  console.log("updateee");
   User.findById(req.params.user_id)
     .then((user) => {
-      user.username = req.body.username;
-      user.password = req.body.password;
-      user.email = req.body.email;
-      user.role = req.body.role;
-      user.birthday = req.body.birthday;
-      // save the user and check for errors
-      user.save(function (err) {
-        if (err) res.json(err);
-        res.json({
-          message: "User updated",
-          results: user,
-        });
+      if (!user) res.status(404).send({ message: "User not found" });
+
+      // Iterate over the keys in the request body and update corresponding fields
+      Object.keys(req.body).forEach((key) => {
+        user[key] = req.body[key];
       });
+
+      // save the user and check for errors
+      user
+        .save()
+        .then((updatedUser) => {
+          res.json({
+            message: "User updated",
+            results: updatedUser,
+          });
+        })
+        .catch((err) => {
+          res
+            .status(500)
+            .send({ message: err.message || "Error updating user" });
+        });
     })
     .catch((err) => {
-      if (err) res.status(500).send({ message: err });
+      res.status(500).send({ message: err.message || "Error finding user" });
     });
 };

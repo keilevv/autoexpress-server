@@ -22,8 +22,16 @@ var storageMaterialSchema = mongoose.Schema({
     type: Number,
     required: true,
   },
+  caution_quantity: {
+    type: Number,
+  },
   price: {
     type: Number,
+  },
+  owner: {
+    type: String,
+    default: "autoexpress",
+    required: true,
   },
   created_date: {
     type: Date,

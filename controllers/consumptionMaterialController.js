@@ -47,6 +47,7 @@ exports.register = async (req, res) => {
       const consumptionMaterial = new ConsumptionMaterial({
         material: material.material_id,
         quantity: material.quantity,
+        caution_quantity: material.caution_quantity,
       });
 
       await consumptionMaterial.save();
@@ -91,6 +92,13 @@ exports.index = async function (req, res) {
         case "search":
           // Store material.name filter separately
           materialNameFilter["material.name"] = {
+            $regex: filterItem.value,
+            $options: "i",
+          };
+          break;
+        case "owner":
+          // Store material.name filter separately
+          materialNameFilter["material.owner"] = {
             $regex: filterItem.value,
             $options: "i",
           };

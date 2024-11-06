@@ -18,6 +18,9 @@ var consumptionMaterialSchema = mongoose.Schema({
     type: Number,
     required: true,
   },
+  caution_quantity: {
+    type: Number,
+  },
   created_date: {
     type: Date,
     default: Date.now,
