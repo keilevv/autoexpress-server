@@ -13,6 +13,7 @@ const mongoose = require("mongoose");
 exports.register = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
+  let owner = req.body.owner ? req.body.owner : "autoexpresss";
 
   try {
     const jobOrder = new JobOrder({
@@ -21,6 +22,7 @@ exports.register = async (req, res) => {
       employee: req.body.employee,
       car_plate: req.body.car_plate,
       status: ["pending"],
+      owner: owner,
     });
 
     // Save the job order first
@@ -104,6 +106,11 @@ exports.index = async function (req, res) {
               query["employee"] = new mongoose.Types.ObjectId(filterItem.value);
             }
             break;
+          case "owner":
+            if (filterItem.value) {
+              query["owner"] = filterItem.value;
+            }
+            break;
         }
       });
     }
@@ -159,13 +166,15 @@ exports.index = async function (req, res) {
 
     const total_price = totalPriceResult[0]?.total_price || 0;
 
+    console.log("query", query);
+
     // Retrieve paginated results with projection for the requested page
     const jobOrders = await JobOrder.aggregate([
       { $match: query },
       { $sort: sortOptions },
       { $skip: (page - 1) * limit },
       { $limit: parseInt(limit) },
-      ...jobOrderProjectionMaterials, // Assuming this projection includes needed fields
+      // ...jobOrderProjectionMaterials, // Assuming this projection includes needed fields
     ]).catch((err) => {
       return res
         .status(500)

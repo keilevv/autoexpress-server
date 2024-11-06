@@ -50,6 +50,11 @@ var jobOrderSchema = mongoose.Schema({
       price: { type: Number },
     },
   ],
+  owner: {
+    type: String,
+    default: "autoexpress",
+    required: true,
+  },
   created_date: {
     type: Date,
     default: Date.now,
