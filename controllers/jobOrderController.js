@@ -108,7 +108,9 @@ exports.index = async function (req, res) {
             break;
           case "owner":
             if (filterItem.value) {
-              query["owner"] = filterItem.value;
+              query["owner"] = filterItem.value
+                ? filterItem.value
+                : "autoexpresss";
             }
             break;
         }
@@ -166,7 +168,6 @@ exports.index = async function (req, res) {
 
     const total_price = totalPriceResult[0]?.total_price || 0;
 
-    console.log("query", query);
 
     // Retrieve paginated results with projection for the requested page
     const jobOrders = await JobOrder.aggregate([

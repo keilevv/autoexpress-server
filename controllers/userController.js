@@ -1,4 +1,6 @@
 User = require("../models/userModel");
+const mongoose = require("mongoose");
+const { userProjection } = require("./aggregations");
 
 exports.index = function (req, res) {
   User.find({}).then((users) => {
@@ -41,12 +43,20 @@ exports.delete = function (req, res) {
 
 // Handle view user user
 exports.get = function (req, res) {
-  User.findById(req.params.user_id, "-password")
-    .then((user) => {
-      if (user) {
-        res.json({
-          message: "User details loading..",
-          results: user,
+  User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.params.user_id),
+      },
+    },
+    ...userProjection,
+  ])
+    .then((cursor) => {
+      if (cursor) {
+        return res.json({
+          status: "success",
+          message: "User retrieved successfully",
+          results: cursor[0],
         });
       }
     })

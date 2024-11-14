@@ -56,6 +56,19 @@ exports.appointmentProjection = [
   },
 ];
 
+exports.userProjection = [
+  {
+    $project: {
+      _id: 1,
+      created_date: 1,
+      username: 1,
+      email: 1,
+      roles: 1,
+      archived: 1,
+    },
+  },
+];
+
 exports.clientProjection = [
   {
     $lookup: {
