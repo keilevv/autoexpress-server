@@ -26,36 +26,48 @@ exports.register = async (req, res) => {
       const existingConsumptionMaterial = await ConsumptionMaterial.findOne({
         material: material.material_id,
       });
+
       if (
         existingConsumptionMaterial &&
         !existingConsumptionMaterial.archived
       ) {
+        if (material.quantity > storageMaterial.quantity) {
+          return res
+            .status(400)
+            .send({ message: "No hay suficientes materiales" });
+        }
+
+        existingConsumptionMaterial.quantity += material.quantity;
+        storageMaterial.quantity -= material.quantity;
+
+        await existingConsumptionMaterial.save();
+        await storageMaterial.save();
+        
         return res
-          .status(400)
-          .send({ message: "Material de consumo ya existente" });
+          .status(201)
+          .send({ message: "Materiales de consumo agregados exitosamente" });
+      } else {
+        if (material.quantity > storageMaterial.quantity) {
+          return res
+            .status(400)
+            .send({ message: "No hay suficientes materiales" });
+        }
+
+        storageMaterial.quantity -= material.quantity;
+        await storageMaterial.save();
+
+        const consumptionMaterial = new ConsumptionMaterial({
+          material: material.material_id,
+          quantity: material.quantity,
+          caution_quantity: material.caution_quantity,
+        });
+
+        await consumptionMaterial.save();
+        res
+          .status(201)
+          .send({ message: "Materiales de consumo creados exitosamente" });
       }
-
-      if (material.quantity > storageMaterial.quantity) {
-        return res
-          .status(400)
-          .send({ message: "No hay suficientes materiales" });
-      }
-
-      storageMaterial.quantity -= material.quantity;
-      await storageMaterial.save();
-
-      const consumptionMaterial = new ConsumptionMaterial({
-        material: material.material_id,
-        quantity: material.quantity,
-        caution_quantity: material.caution_quantity,
-      });
-
-      await consumptionMaterial.save();
     }
-
-    res
-      .status(201)
-      .send({ message: "Materiales de consumo creados exitosamente" });
   } catch (err) {
     res
       .status(500)

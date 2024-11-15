@@ -80,7 +80,6 @@ exports.getByName = function (req, res) {
 };
 // Handle update user user
 exports.update = function (req, res) {
-  console.log("updateee");
   User.findById(req.params.user_id)
     .then((user) => {
       if (!user) res.status(404).send({ message: "User not found" });

@@ -168,14 +168,13 @@ exports.index = async function (req, res) {
 
     const total_price = totalPriceResult[0]?.total_price || 0;
 
-
     // Retrieve paginated results with projection for the requested page
     const jobOrders = await JobOrder.aggregate([
       { $match: query },
       { $sort: sortOptions },
       { $skip: (page - 1) * limit },
       { $limit: parseInt(limit) },
-      // ...jobOrderProjectionMaterials, // Assuming this projection includes needed fields
+      ...jobOrderProjectionMaterials, // Assuming this projection includes needed fields
     ]).catch((err) => {
       return res
         .status(500)
