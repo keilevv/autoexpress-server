@@ -12,6 +12,7 @@ exports.register = async (req, res) => {
     const employee = await new Employee({
       name: req.body.name,
       roles: req.body.roles,
+      owner: req.body.owner ? req.body.owner : "autoexpresss",
     });
     employee
       .save()

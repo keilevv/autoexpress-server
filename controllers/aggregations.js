@@ -208,6 +208,7 @@ exports.jobOrderProjectionMaterials = [
   {
     $group: {
       _id: "$_id",
+      description: { $first: "$description" },
       owner: { $first: "$owner" },
       archived: { $first: "$archived" },
       number: { $first: "$number" },

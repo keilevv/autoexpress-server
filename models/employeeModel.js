@@ -14,6 +14,10 @@ var employeeSchema = mongoose.Schema({
     type: String,
     required: true,
   },
+  owner: {
+    type: String,
+    required: true,
+  },
   created_date: {
     type: Date,
     default: Date.now,

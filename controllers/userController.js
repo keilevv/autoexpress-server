@@ -42,8 +42,8 @@ exports.delete = function (req, res) {
 };
 
 // Handle view user user
-exports.get = function (req, res) {
-  User.aggregate([
+exports.get = async function (req, res) {
+  await User.aggregate([
     {
       $match: {
         _id: new mongoose.Types.ObjectId(req.params.user_id),
@@ -52,7 +52,7 @@ exports.get = function (req, res) {
     ...userProjection,
   ])
     .then((cursor) => {
-      if (cursor) {
+      if (cursor.length) {
         return res.json({
           status: "success",
           message: "User retrieved successfully",

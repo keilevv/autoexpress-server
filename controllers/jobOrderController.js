@@ -14,10 +14,14 @@ exports.register = async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
   let owner = req.body.owner ? req.body.owner : "autoexpresss";
+  let description = req.body.description
+    ? req.body.description
+    : "Sin descripción";
 
   try {
     const jobOrder = new JobOrder({
       number: req.body.number,
+      description: description,
       due_date: req.body.due_date,
       employee: req.body.employee,
       car_plate: req.body.car_plate,
@@ -129,6 +133,7 @@ exports.index = async function (req, res) {
     // Aggregation to calculate total price for all documents matching the filter
     const totalPriceResult = await JobOrder.aggregate([
       { $match: query },
+      ...jobOrderProjectionMaterials,
       {
         $addFields: {
           consumedMaterialsTotal: {

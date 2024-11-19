@@ -10,6 +10,9 @@ var jobOrderSchema = mongoose.Schema({
     type: String,
     required: true,
   },
+  description: {
+    type: String,
+  },
   due_date: {
     type: Date,
   },
