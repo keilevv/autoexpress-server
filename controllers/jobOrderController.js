@@ -117,6 +117,11 @@ exports.index = async function (req, res) {
                 : "autoexpresss";
             }
             break;
+            case "status":
+              if (filterItem.value) {
+                query["status"] = [String(filterItem.value)];
+              }
+              break;
         }
       });
     }
