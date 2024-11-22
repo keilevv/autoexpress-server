@@ -141,6 +141,7 @@ exports.consumptionMaterialProjection = [
       area: 1,
       quantity: 1,
       created_date: 1,
+      "material.caution_quantity": 1,
       "material.owner": 1,
       "material.name": 1,
       "material.reference": 1,
@@ -209,6 +210,8 @@ exports.jobOrderProjectionMaterials = [
     $group: {
       _id: "$_id",
       description: { $first: "$description" },
+      car_brand: { $first: "$car_brand" },
+      car_model: { $first: "$car_model" },
       owner: { $first: "$owner" },
       archived: { $first: "$archived" },
       number: { $first: "$number" },

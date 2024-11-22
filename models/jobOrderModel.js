@@ -25,6 +25,12 @@ var jobOrderSchema = mongoose.Schema({
     type: String,
     required: true,
   },
+  car_brand: {
+    type: String,
+  },
+  car_model:{
+    type: String,
+  },
   status: [
     {
       type: String,

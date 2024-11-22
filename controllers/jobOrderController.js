@@ -22,6 +22,8 @@ exports.register = async (req, res) => {
     const jobOrder = new JobOrder({
       number: req.body.number,
       description: description,
+      car_brand: req.body.car_brand,
+      car_model: req.body.car_model,
       due_date: req.body.due_date,
       employee: req.body.employee,
       car_plate: req.body.car_plate,
@@ -77,7 +79,7 @@ exports.register = async (req, res) => {
 // Handle index actions
 exports.index = async function (req, res) {
   try {
-    const { page = 1, limit = 10, sortBy, sortOrder, ...filter } = req.query;
+    const { page = 1, limit = 10, sortBy = "created_date", sortOrder, ...filter } = req.query;
     let query = {};
 
     const filterArray = helpers.getFilterArray(filter);
@@ -128,7 +130,7 @@ exports.index = async function (req, res) {
 
     let sortOptions = {};
     if (sortBy && sortOrder) {
-      sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+      sortOptions[sortBy] = sortOrder === "desc" ? 1 : -1;
     } else {
       sortOptions["date"] = 1;
     }
