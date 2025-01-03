@@ -42,7 +42,7 @@ exports.register = async (req, res) => {
 
         await existingConsumptionMaterial.save();
         await storageMaterial.save();
-        
+
         return res
           .status(201)
           .send({ message: "Materiales de consumo agregados exitosamente" });
@@ -155,6 +155,16 @@ exports.index = async function (req, res) {
             { $limit: parseInt(limit) },
           ],
           totalCount: [{ $count: "count" }],
+          totalPrice: [
+            {
+              $group: {
+                _id: null,
+                total: {
+                  $sum: { $multiply: ["$material.price", "$quantity"] },
+                },
+              },
+            },
+          ],
         },
       },
     ]);
@@ -162,11 +172,14 @@ exports.index = async function (req, res) {
     const totalMaterials =
       materials[0].totalCount.length > 0 ? materials[0].totalCount[0].count : 0;
     const results = materials[0].paginatedResults;
+    const totalPrice =
+      materials[0].totalPrice.length > 0 ? materials[0].totalPrice[0].total : 0;
 
     return res.json({
       status: "success",
       message: "Materials list retrieved successfully",
       count: totalMaterials,
+      total_price: totalPrice,
       results,
     });
   } catch (err) {
