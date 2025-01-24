@@ -3,12 +3,24 @@ const { authJwt, verifyRegister } = require("../middlewares");
 const router = express.Router();
 const controller = require("../controllers/employeeController");
 
-router.get("/operations/employees", controller.index);
-router.get("/operations/employees/:employee_id", [authJwt.verifyToken], controller.get);
-router.post("/operations/register-employee", controller.register);
-router.put("/operations/update/employees/:employee_id", controller.update);
+router.get("/operations/employees", [authJwt.verifyToken], controller.index);
+router.get(
+  "/operations/employees/:employee_id",
+  [authJwt.verifyToken],
+  controller.get
+);
+router.post(
+  "/operations/register-employee",
+  [authJwt.verifyToken],
+  controller.register
+);
+router.put(
+  "/operations/update/employees/:employee_id",
+  [authJwt.verifyToken],
+  controller.update
+);
 router.delete(
-  "/operations/:employee_id",
+  "/operations/employee/:employee_id",
   [authJwt.verifyToken],
   controller.delete
 );
