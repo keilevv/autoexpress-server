@@ -28,7 +28,7 @@ var jobOrderSchema = mongoose.Schema({
   car_brand: {
     type: String,
   },
-  car_model:{
+  car_model: {
     type: String,
   },
   status: [
@@ -61,7 +61,7 @@ var jobOrderSchema = mongoose.Schema({
   ],
   owner: {
     type: String,
-    default: "autoexpress",
+    default: "autocheck",
     required: true,
   },
   created_date: {

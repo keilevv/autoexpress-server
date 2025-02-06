@@ -30,7 +30,7 @@ var storageMaterialSchema = mongoose.Schema({
   },
   owner: {
     type: String,
-    default: "autoexpress",
+    default: "autocheck",
     required: true,
   },
   created_date: {

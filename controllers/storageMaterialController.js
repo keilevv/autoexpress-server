@@ -42,7 +42,7 @@ exports.register = async (req, res) => {
       unit: unit,
       quantity: quantity,
       price: price,
-      owner: owner ? owner : "autoexpress",
+      owner: owner ? owner : "autocheck",
       caution_quantity: caution_quantity ? caution_quantity : 0,
     });
 
@@ -270,4 +270,33 @@ exports.deleteAll = function (req, res) {
 };
 
 // Controller to upload and process the CSV file
-exports.uploadStorageMaterials = (req, res) => {};
+exports.uploadStorageMaterials = (req, res) => {
+  const csvFilePath = path.join(
+    __dirname,
+    "../utils/uploads/storage_materials.csv"
+  ); // Adjust the path
+  const materials = [];
+
+  fs.createReadStream(csvFilePath)
+    .pipe(csv({ separator: "," }))
+    .on("data", (row) => {
+      materials.push({
+        name: row["Nombre"] || "Sin nombre",
+        reference: row["Referencia"] || "Sin referencia",
+        unit: row["Unidad de medida"] || "unit",
+        price: Number(row["Precio unidad"]) || 0,
+        quantity: Number(row["Cantidad disponible"]) || 0,
+        caution_quantity: Number(row["Cantidad de alarma"]) || 0,
+        owner: "autocheck",
+      });
+    })
+    .on("end", async () => {
+      console.log("materials", materials);
+      try {
+        await StorageMaterial.insertMany(materials);
+        res.json({ message: "CSV data imported successfully!" });
+      } catch (error) {
+        res.status(500).json({ error: "Error inserting data", details: error });
+      }
+    });
+};
