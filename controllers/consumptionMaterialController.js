@@ -132,7 +132,8 @@ exports.index = async function (req, res) {
   } else {
     sortOptions["date"] = 1;
   }
-
+  sortOptions["_id"] = 1;
+  
   try {
     const materials = await ConsumptionMaterial.aggregate([
       { $match: query }, // Match the base query first

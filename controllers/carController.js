@@ -91,6 +91,7 @@ exports.index = async function (req, res) {
     } else {
       sortOptions["date"] = 1;
     }
+    sortOptions["_id"] = 1;
 
     const totalCars = await Car.countDocuments(query);
     const cars = await Car.aggregate(

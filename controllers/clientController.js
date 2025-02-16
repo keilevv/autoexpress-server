@@ -109,7 +109,8 @@ exports.index = async function (req, res) {
     } else {
       sortOptions["date"] = 1;
     }
-
+    sortOptions["_id"] = 1;
+    
     const totalClients = await Client.countDocuments(query);
 
     const clients = await Client.aggregate(

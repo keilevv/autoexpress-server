@@ -61,7 +61,8 @@ exports.index = async function (req, res) {
     } else {
       sortOptions["date"] = 1;
     }
-
+    sortOptions["_id"] = 1;
+    
     const totalMessages = await Message.countDocuments(query);
 
     const messages = await Message.aggregate([

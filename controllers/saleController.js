@@ -64,13 +64,14 @@ exports.index = async function (req, res) {
 
   let query = {};
 
-  // Apply sorting options if provided
+  // Apply sorting if any
   let sortOptions = {};
   if (sortBy && sortOrder) {
     sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
   } else {
-    sortOptions["date"] = -1; // Default sort by date descending
+    sortOptions["date"] = 1;
   }
+  sortOptions["_id"] = 1;
 
   try {
     const totalSales = await Sale.countDocuments(query);

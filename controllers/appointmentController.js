@@ -132,12 +132,14 @@ exports.index = async function (req, res) {
       });
     }
 
+    // Apply sorting if any
     let sortOptions = {};
     if (sortBy && sortOrder) {
       sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
     } else {
       sortOptions["date"] = 1;
     }
+    sortOptions["_id"] = 1;
 
     const totalAppointments = await Appointment.countDocuments(query);
 
