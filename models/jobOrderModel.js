@@ -38,9 +38,9 @@ var jobOrderSchema = mongoose.Schema({
   ],
   consumed_materials: [
     {
-      consumption_material: {
+      storage_material: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "consumptionMaterial", // Reference to consumptionMaterial
+        ref: "storageMaterial", // Reference to storageMaterial
         required: true,
       },
       quantity: {

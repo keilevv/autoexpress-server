@@ -1,7 +1,7 @@
 // jobOrderController.js
 // Import Models
 JobOrder = require("../models/jobOrderModel");
-ConsumptionMaterial = require("../models/consumptionMaterialModel");
+StorageMaterial = require("../models/storageMaterialModel");
 const {
   jobOrderProjection,
   jobOrderProjectionMaterials,
@@ -39,7 +39,7 @@ exports.register = async (req, res) => {
       for (const item of req.body.consumed_materials) {
         const { material, quantity } = item;
 
-        const updatedMaterial = await ConsumptionMaterial.findByIdAndUpdate(
+        const updatedMaterial = await StorageMaterial.findByIdAndUpdate(
           material,
           { $inc: { quantity: -quantity } },
           { new: true, session }
@@ -216,14 +216,21 @@ exports.index = async function (req, res) {
 };
 
 exports.addConsumedMaterials = async (req, res) => {
-  const { job_order_id } = req.params;
   try {
-    const { consumed_materials, consumed_colors } = req.body; // consumed_materials is an array of { material_id, quantity }
+    const { job_order_id } = req.params;
+    const { consumed_materials, consumed_colors } = req.body;
 
     // Find the JobOrder by ID
     const jobOrder = await JobOrder.findById(job_order_id);
     if (!jobOrder) {
       return res.status(404).send({ message: "JobOrder not found" });
+    }
+
+    // Validate consumed_materials and ensure it's an array
+    if (!Array.isArray(consumed_materials)) {
+      return res
+        .status(400)
+        .send({ message: "Invalid consumed_materials format" });
     }
 
     // If consumed_colors is provided, update it
@@ -236,47 +243,66 @@ exports.addConsumedMaterials = async (req, res) => {
 
     // Create a set of the new consumed material IDs for easier comparison
     const consumedMaterialSet = new Set(
-      consumed_materials.map((item) => item.consumption_material.toString())
+      consumed_materials
+        .filter((item) => item.storage_material) // Ensure storage_material exists
+        .map((item) => item.storage_material.toString())
     );
 
     // Filter out materials that are no longer in the consumed_materials list
-    const removedMaterials = previousConsumedMaterials.filter(
-      (item) => !consumedMaterialSet.has(item.consumption_material.toString())
-    );
+    const removedMaterials = previousConsumedMaterials.filter((item) => {
+      const plainItem = item.toObject();
+      return !consumedMaterialSet.has(plainItem.storage_material?.toString());
+    });
 
-    // Add the quantity of removed materials back to the corresponding ConsumptionMaterial stock
+    // Add the quantity of removed materials back to the corresponding StorageMaterial stock
     for (let removedItem of removedMaterials) {
-      const consumptionMaterial = await ConsumptionMaterial.findById(
-        removedItem.consumption_material
+      if (!removedItem.storage_material) continue; // Skip invalid entries
+
+      const consumptionMaterial = await StorageMaterial.findById(
+        removedItem.storage_material
       );
+
       if (consumptionMaterial) {
         consumptionMaterial.quantity += removedItem.quantity;
         await consumptionMaterial.save();
       }
     }
 
-    // Update the jobOrder's consumed_materials list by removing items not in the new list
-    jobOrder.consumed_materials = jobOrder.consumed_materials.filter((item) =>
-      consumedMaterialSet.has(item.consumption_material.toString())
+    // Update the jobOrder's consumed_materials list by keeping only valid items
+    jobOrder.consumed_materials = jobOrder.consumed_materials.filter(
+      (item) =>
+        item.storage_material &&
+        consumedMaterialSet.has(item.storage_material.toString())
     );
 
     // Process the new consumed materials
     for (let materialItem of consumed_materials) {
-      const consumptionMaterial = await ConsumptionMaterial.findById(
-        materialItem.consumption_material
+      if (!materialItem.storage_material) {
+        return res
+          .status(400)
+          .send({ message: "Invalid material entry in consumed_materials" });
+      }
+
+      const consumptionMaterial = await StorageMaterial.findById(
+        new mongoose.Types.ObjectId(materialItem.storage_material)
       );
+
+      console.log("materialItem", materialItem.storage_material);
+
       if (!consumptionMaterial) {
         return res.status(404).send({
-          message: `Material with ID ${materialItem.consumption_material} not found`,
+          message: `Material with ID ${materialItem.storage_material} not found`,
         });
       }
 
       // Find the material in the job order's consumed_materials list
       const existingMaterial = jobOrder.consumed_materials.find(
         (item) =>
-          item.consumption_material.toString() ===
-          materialItem.consumption_material
+          item.storage_material &&
+          item.storage_material.toString() ===
+            materialItem.storage_material.toString()
       );
+
       let quantityDifference = 0;
 
       if (existingMaterial) {
@@ -287,7 +313,7 @@ exports.addConsumedMaterials = async (req, res) => {
           // Subtract the difference from the consumptionMaterial stock
           if (consumptionMaterial.quantity < quantityDifference) {
             return res.status(400).send({
-              message: `Not enough quantity for material ID ${materialItem.consumption_material}`,
+              message: `Not enough quantity for material ID ${materialItem.storage_material}`,
             });
           }
           consumptionMaterial.quantity -= quantityDifference;
@@ -302,13 +328,13 @@ exports.addConsumedMaterials = async (req, res) => {
         // If it's a new material, just add it to the consumed_materials array
         if (consumptionMaterial.quantity < materialItem.quantity) {
           return res.status(400).send({
-            message: `Not enough quantity for material ID ${materialItem.consumption_material}`,
+            message: `Not enough quantity for material ID ${materialItem.storage_material}`,
           });
         }
 
         consumptionMaterial.quantity -= materialItem.quantity;
         jobOrder.consumed_materials.push({
-          consumption_material: materialItem.consumption_material,
+          storage_material: materialItem.storage_material,
           quantity: materialItem.quantity,
         });
       }
@@ -322,13 +348,14 @@ exports.addConsumedMaterials = async (req, res) => {
 
     return res.send({
       message:
-        "Materials added/updated and consumption materials updated successfully!",
+        "Materials added/updated and storage materials updated successfully!",
       results: jobOrder,
     });
   } catch (error) {
-    return res
-      .status(500)
-      .send({ message: "Internal server error", description: error.message });
+    return res.status(500).send({
+      message: "Internal server error",
+      description: error.message,
+    });
   }
 };
 
