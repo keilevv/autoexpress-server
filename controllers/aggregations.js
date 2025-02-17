@@ -180,8 +180,8 @@ exports.jobOrderProjectionMaterials = [
   },
   {
     $lookup: {
-      from: "consumptionmaterials",
-      localField: "consumed_materials.consumption_material",
+      from: "storagematerials",
+      localField: "consumed_materials.storage_material",
       foreignField: "_id",
       as: "consumed_material_details",
     },
@@ -189,20 +189,6 @@ exports.jobOrderProjectionMaterials = [
   {
     $unwind: {
       path: "$consumed_material_details",
-      preserveNullAndEmptyArrays: true,
-    },
-  },
-  {
-    $lookup: {
-      from: "storagematerials",
-      localField: "consumed_material_details.material",
-      foreignField: "_id",
-      as: "storage_material_details",
-    },
-  },
-  {
-    $unwind: {
-      path: "$storage_material_details",
       preserveNullAndEmptyArrays: true,
     },
   },
@@ -231,8 +217,7 @@ exports.jobOrderProjectionMaterials = [
       consumed_materials: {
         $push: {
           quantity: "$consumed_materials.quantity",
-          consumption_material: "$consumed_material_details",
-          storage_material: "$storage_material_details",
+          storage_material: "$consumed_material_details",
         },
       },
       created_date: { $first: "$created_date" },
