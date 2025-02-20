@@ -26,7 +26,6 @@ exports.register = async (req, res) => {
       typeof unit !== "string" ||
       typeof quantity !== "number" ||
       typeof price !== "number" ||
-      typeof owner !== "string" ||
       typeof caution_quantity !== "number"
     ) {
       return res.status(400).json({ error: "Invalid data format." });
