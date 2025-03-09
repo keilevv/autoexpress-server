@@ -1,5 +1,6 @@
 const express = require("express");
-const { authJwt } = require("../middlewares");
+const authJwt = require("../middlewares/authJwt");
+const verifyJobOrder = require("../middlewares/verifyJobOrder");
 const jobOrderController = require("../controllers/jobOrderController");
 
 const router = express.Router();
@@ -17,7 +18,7 @@ router.get(
 );
 router.post(
   "/register-job-order",
-  [authJwt.verifyToken],
+  [authJwt.verifyToken, verifyJobOrder.checkJobOrder],
   jobOrderController.register
 );
 router.put(

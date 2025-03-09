@@ -19,6 +19,9 @@ exports.helpers = {
       return filterArray;
     }
   },
+  StringIsNumber(str) {
+    return !isNaN(str) && !isNaN(parseFloat(str));
+  },
 };
 
 exports.colorCodingList = [

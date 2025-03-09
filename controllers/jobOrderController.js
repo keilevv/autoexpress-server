@@ -48,7 +48,7 @@ exports.register = async (req, res) => {
         // Check if quantity goes negative
         if (!updatedMaterial || updatedMaterial.quantity < 0) {
           throw new Error(
-            `Insufficient stock for material ID: ${material} (remaining quantity: ${
+            `Stock insuficiente para : ${material.name} (remaining quantity: ${
               updatedMaterial ? updatedMaterial.quantity : 0
             })`
           );
@@ -105,6 +105,15 @@ exports.index = async function (req, res) {
               dateFilter["$lte"] = new Date(req.query.end_date);
             query["created_date"] = dateFilter;
             break;
+          case "due_start_date":
+          case "due_end_date":
+            const dueDateFilter = {};
+            if (req.query.due_start_date)
+              dueDateFilter["$gte"] = new Date(req.query.due_start_date);
+            if (req.query.due_end_date)
+              dueDateFilter["$lte"] = new Date(req.query.due_end_date);
+            query["due_date"] = dueDateFilter;
+            break;
           case "search":
             if (filterItem.value) {
               query["$or"] = [
@@ -132,6 +141,9 @@ exports.index = async function (req, res) {
             break;
         }
       });
+    }
+    if (!query["status"]) {
+      query["status"] = { $ne: "completed" };
     }
 
     // Apply sorting if any
@@ -223,14 +235,14 @@ exports.addConsumedMaterials = async (req, res) => {
     // Find the JobOrder by ID
     const jobOrder = await JobOrder.findById(job_order_id);
     if (!jobOrder) {
-      return res.status(404).send({ message: "JobOrder not found" });
+      return res.status(404).send({ message: "O.T. No encontrada" });
     }
 
     // Validate consumed_materials and ensure it's an array
     if (!Array.isArray(consumed_materials)) {
       return res
         .status(400)
-        .send({ message: "Invalid consumed_materials format" });
+        .send({ message: "Formato invalido para materiales consumidos" });
     }
 
     // If consumed_colors is provided, update it
@@ -278,20 +290,16 @@ exports.addConsumedMaterials = async (req, res) => {
     // Process the new consumed materials
     for (let materialItem of consumed_materials) {
       if (!materialItem.storage_material) {
-        return res
-          .status(400)
-          .send({ message: "Invalid material entry in consumed_materials" });
+        return res.status(400).send({ message: "Material en lista invalido" });
       }
 
       const consumptionMaterial = await StorageMaterial.findById(
         new mongoose.Types.ObjectId(materialItem.storage_material)
       );
 
-      console.log("materialItem", materialItem.storage_material);
-
       if (!consumptionMaterial) {
         return res.status(404).send({
-          message: `Material with ID ${materialItem.storage_material} not found`,
+          message: `Material con ID ${materialItem.storage_material} no encontrado`,
         });
       }
 
@@ -347,8 +355,7 @@ exports.addConsumedMaterials = async (req, res) => {
     await jobOrder.save();
 
     return res.send({
-      message:
-        "Materials added/updated and storage materials updated successfully!",
+      message: "Materiales actualizados en la O.T. con éxito",
       results: jobOrder,
     });
   } catch (error) {
