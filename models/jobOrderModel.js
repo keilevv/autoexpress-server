@@ -50,6 +50,9 @@ var jobOrderSchema = mongoose.Schema({
       price: {
         type: Number,
       },
+      sell_price: {
+        type: Number,
+      },
     },
   ],
   consumed_colors: [

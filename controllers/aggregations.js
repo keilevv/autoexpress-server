@@ -218,6 +218,8 @@ exports.jobOrderProjectionMaterials = [
         $push: {
           quantity: "$consumed_materials.quantity",
           storage_material: "$consumed_material_details",
+          price: "$consumed_materials.price",
+          sell_price: "$consumed_materials.sell_price",
         },
       },
       created_date: { $first: "$created_date" },

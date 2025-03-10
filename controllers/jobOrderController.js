@@ -171,7 +171,7 @@ exports.index = async function (req, res) {
                 in: {
                   $multiply: [
                     "$$material.quantity",
-                    "$$material.storage_material.price",
+                    "$$material.storage_material.sell_price",
                   ],
                 },
               },
@@ -344,6 +344,8 @@ exports.addConsumedMaterials = async (req, res) => {
         jobOrder.consumed_materials.push({
           storage_material: materialItem.storage_material,
           quantity: materialItem.quantity,
+          price: materialItem.price,
+          sell_price: materialItem.sell_price,
         });
       }
 
