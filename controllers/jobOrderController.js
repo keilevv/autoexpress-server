@@ -330,8 +330,11 @@ exports.addConsumedMaterials = async (req, res) => {
           consumptionMaterial.quantity += Math.abs(quantityDifference);
         }
 
-        // Update the quantity in the consumed_materials array
+        // Update the quantity, price, and sell_price
         existingMaterial.quantity = materialItem.quantity;
+        existingMaterial.price = materialItem.price;
+        existingMaterial.sell_price =
+          materialItem.sell_price ?? materialItem.price * 1.1; // Default if not provided
       } else {
         // If it's a new material, just add it to the consumed_materials array
         if (consumptionMaterial.quantity < materialItem.quantity) {
@@ -345,7 +348,7 @@ exports.addConsumedMaterials = async (req, res) => {
           storage_material: materialItem.storage_material,
           quantity: materialItem.quantity,
           price: materialItem.price,
-          sell_price: materialItem.sell_price,
+          sell_price: materialItem.sell_price ?? materialItem.price * 1.1, // Default if not provided
         });
       }
 

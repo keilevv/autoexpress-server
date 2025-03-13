@@ -7,6 +7,7 @@ const StorageMaterial = require("../models/storageMaterialModel");
 const fs = require("fs");
 const path = require("path");
 const csv = require("csv-parser");
+const jobOrderModel = require("../models/jobOrderModel");
 
 exports.register = async (req, res) => {
   try {
@@ -311,11 +312,11 @@ exports.syncSchema = async (req, res) => {
     console.log("Starting schema synchronization...");
 
     // Get the expected schema fields from the model
-    const schemaPaths = StorageMaterial.schema.paths;
+    const schemaPaths = jobOrderModel.schema.paths;
     const expectedFields = Object.keys(schemaPaths);
 
     // Retrieve all storage materials
-    const materials = await StorageMaterial.find({});
+    const materials = await jobOrderModel.find({});
 
     for (const material of materials) {
       let updatedFields = {};
@@ -349,7 +350,7 @@ exports.syncSchema = async (req, res) => {
 
       // Apply updates if necessary
       if (Object.keys(updatedFields).length > 0 || removeFields.length > 0) {
-        await StorageMaterial.updateOne(
+        await jobOrderModel.updateOne(
           { _id: material._id },
           {
             $set: updatedFields,
