@@ -24,9 +24,15 @@ var storageMaterialSchema = mongoose.Schema({
   },
   caution_quantity: {
     type: Number,
+    default: 10,
   },
   price: {
     type: Number,
+  },
+  margin: {
+    type: Number,
+    min: 0,
+    default: 10,
   },
   owner: {
     type: String,

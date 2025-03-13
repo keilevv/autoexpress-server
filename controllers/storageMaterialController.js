@@ -17,8 +17,11 @@ exports.register = async (req, res) => {
     let price = req.body.price;
     let owner = req.body.owner;
     let caution_quantity = req.body.caution_quantity;
+    let margin = req.body.margin;
+
     quantity = Number(quantity);
     price = Number(price);
+    margin = Number(margin);
 
     if (
       typeof name !== "string" ||
@@ -26,7 +29,8 @@ exports.register = async (req, res) => {
       typeof unit !== "string" ||
       typeof quantity !== "number" ||
       typeof price !== "number" ||
-      typeof caution_quantity !== "number"
+      typeof caution_quantity !== "number" ||
+      typeof margin !== "number"
     ) {
       return res.status(400).json({ error: "Invalid data format." });
     }
@@ -43,6 +47,7 @@ exports.register = async (req, res) => {
       price: price,
       owner: owner ? owner : "autocheck",
       caution_quantity: caution_quantity ? caution_quantity : 0,
+      margin: margin ? margin : 10,
     });
 
     storageMaterial.save().then((material) => {
@@ -112,7 +117,7 @@ exports.index = async function (req, res) {
     sortOptions["date"] = 1;
   }
   sortOptions["_id"] = 1;
-
+  console.log("sortOptions", sortOptions, query);
   try {
     const materials = await StorageMaterial.aggregate([
       { $match: query }, // Match the base query first
@@ -299,4 +304,63 @@ exports.uploadStorageMaterials = (req, res) => {
         res.status(500).json({ error: "Error inserting data", details: error });
       }
     });
+};
+
+exports.syncSchema = async (req, res) => {
+  try {
+    console.log("Starting schema synchronization...");
+
+    // Get the expected schema fields from the model
+    const schemaPaths = StorageMaterial.schema.paths;
+    const expectedFields = Object.keys(schemaPaths);
+
+    // Retrieve all storage materials
+    const materials = await StorageMaterial.find({});
+
+    for (const material of materials) {
+      let updatedFields = {};
+      let removeFields = [];
+
+      // Add missing fields with default values
+      expectedFields.forEach((field) => {
+        if (!Object.prototype.hasOwnProperty.call(material, field)) {
+          let defaultValue = schemaPaths[field].options.default;
+
+          // If the default is a function (like Date.now), call it
+          if (typeof defaultValue === "function") {
+            defaultValue = defaultValue();
+          }
+
+          if (defaultValue !== undefined) {
+            updatedFields[field] = defaultValue;
+          }
+        }
+      });
+
+      // Remove extra fields not in the schema
+      Object.keys(material._doc).forEach((field) => {
+        if (!expectedFields.includes(field)) {
+          removeFields.push(field);
+        }
+      });
+
+      // Debugging: Check missing fields before update
+      console.log(`Before update: ID=${material._id}, missing fields:`, updatedFields);
+
+      // Apply updates if necessary
+      if (Object.keys(updatedFields).length > 0 || removeFields.length > 0) {
+        await StorageMaterial.updateOne(
+          { _id: material._id },
+          {
+            $set: updatedFields,
+            $unset: removeFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {}),
+          }
+        );
+        console.log(`Updated ID=${material._id}, Set:`, updatedFields);
+      }
+    }
+    res.status(200).json({ message: "Schema synchronization complete" });
+  } catch (error) {
+    res.status(500).json({ message: `Schema synchronization failed: ${error.message}` });
+  }
 };

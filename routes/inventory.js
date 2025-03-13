@@ -37,6 +37,11 @@ router.post(
   [authJwt.verifyToken],
   storageMaterialController.uploadStorageMaterials
 );
+router.get(
+  "/helpers/sync-storage-schema",
+  [authJwt.verifyToken],
+  storageMaterialController.syncSchema
+);
 /*WARNING: This will delete all materials, use only on dev environment */
 // router.delete("/delete-all", [authJwt.verifyToken], storageMaterialController.deleteAll);
 
