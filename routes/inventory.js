@@ -21,6 +21,12 @@ router.post(
   [authJwt.verifyToken, verifyMaterial.checkStorageMatererialByReference],
   storageMaterialController.register
 );
+router.post(
+  "/operations/storage/restock",
+  [authJwt.verifyToken],
+  storageMaterialController.restockMaterials
+);
+
 router.put(
   "/operations/update/storage/:material_id",
   [authJwt.verifyToken, verifyMaterial.checkStorageMatererialByReference],

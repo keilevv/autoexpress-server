@@ -115,10 +115,10 @@ exports.index = async function (req, res) {
   if (sortBy && sortOrder) {
     sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
   } else {
-    sortOptions["date"] = 1;
+    sortOptions["created_date"] = -1;
   }
   sortOptions["_id"] = 1;
-  console.log("sortOptions", sortOptions, query);
+  
   try {
     const materials = await StorageMaterial.aggregate([
       { $match: query }, // Match the base query first
@@ -346,7 +346,10 @@ exports.syncSchema = async (req, res) => {
       });
 
       // Debugging: Check missing fields before update
-      console.log(`Before update: ID=${material._id}, missing fields:`, updatedFields);
+      console.log(
+        `Before update: ID=${material._id}, missing fields:`,
+        updatedFields
+      );
 
       // Apply updates if necessary
       if (Object.keys(updatedFields).length > 0 || removeFields.length > 0) {
@@ -354,7 +357,10 @@ exports.syncSchema = async (req, res) => {
           { _id: material._id },
           {
             $set: updatedFields,
-            $unset: removeFields.reduce((acc, field) => ({ ...acc, [field]: "" }), {}),
+            $unset: removeFields.reduce(
+              (acc, field) => ({ ...acc, [field]: "" }),
+              {}
+            ),
           }
         );
         console.log(`Updated ID=${material._id}, Set:`, updatedFields);
@@ -362,6 +368,41 @@ exports.syncSchema = async (req, res) => {
     }
     res.status(200).json({ message: "Schema synchronization complete" });
   } catch (error) {
-    res.status(500).json({ message: `Schema synchronization failed: ${error.message}` });
+    res
+      .status(500)
+      .json({ message: `Schema synchronization failed: ${error.message}` });
+  }
+};
+
+exports.restockMaterials = async (req, res) => {
+  const materials = req.body.materials;
+  if (!Array.isArray(materials)) {
+    return res.status(400).json({ message: "Invalid materials data" });
+  }
+
+  try {
+    for (const material of materials) {
+      await StorageMaterial.findById(material.material_id)
+        .then((cursor) => {
+          if (!cursor) {
+            return res.status(404).send({ message: "Material not found" });
+          }
+
+          cursor.quantity += material.quantity;
+          cursor.save();
+          return res.json({
+            status: "success",
+            message: "Materials updated successfully",
+          });
+        })
+        .catch((error) => {
+          return res
+            .status(500)
+            .send({ message: "Invalid material", description: error });
+        });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

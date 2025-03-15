@@ -151,7 +151,7 @@ exports.index = async function (req, res) {
     if (sortBy && sortOrder) {
       sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
     } else {
-      sortOptions["date"] = 1;
+      sortOptions["created_date"] = -1;
     }
     sortOptions["_id"] = 1;
 
