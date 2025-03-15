@@ -409,32 +409,36 @@ exports.update = function (req, res) {
   try {
     JobOrder.findById(req.params.job_order_id)
       .then((jobOrder) => {
-        if (!jobOrder) res.status(404).send({ message: "JobOrder not found" });
+        if (!jobOrder)
+          return res.status(404).send({ message: "JobOrder not found" });
 
-        // Iterate over the keys in the request body and update corresponding fields
-        Object.keys(req.body).forEach((key) => {
-          jobOrder[key] = req.body[key];
+        // Prevent updating created_date
+        const { created_date, ...updateData } = req.body;
+
+        // Iterate over the keys in updateData and update corresponding fields
+        Object.keys(updateData).forEach((key) => {
+          jobOrder[key] = updateData[key];
         });
 
-        // save the jobOrder and check for errors
+        // Save the jobOrder and check for errors
         jobOrder
           .save()
-          .then((updatedEmployee) => {
+          .then((updatedJobOrder) => {
             res.json({
               message: "JobOrder updated",
-              results: updatedEmployee,
+              results: updatedJobOrder,
             });
           })
           .catch((err) => {
             res
               .status(500)
-              .send({ message: err.message || "Error updating jobOrder" });
+              .send({ message: err.message || "Error updating JobOrder" });
           });
       })
       .catch((err) => {
         res
           .status(500)
-          .send({ message: err.message || "Error finding jobOrder" });
+          .send({ message: err.message || "Error finding JobOrder" });
       });
   } catch (err) {
     return res

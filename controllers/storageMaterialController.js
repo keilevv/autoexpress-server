@@ -118,7 +118,7 @@ exports.index = async function (req, res) {
     sortOptions["created_date"] = -1;
   }
   sortOptions["_id"] = 1;
-  
+
   try {
     const materials = await StorageMaterial.aggregate([
       { $match: query }, // Match the base query first
@@ -207,20 +207,23 @@ exports.update = function (req, res) {
     StorageMaterial.findById(req.params.material_id)
       .then((material) => {
         if (!material)
-          return res.status(404).send({ message: "material not found" });
+          return res.status(404).send({ message: "Material not found" });
 
-        // Iterate over the keys in the request body and update corresponding fields
-        Object.keys(req.body).forEach((key) => {
-          material[key] = req.body[key];
+        // Prevent updating created_date
+        const { created_date, ...updateData } = req.body;
+
+        // Iterate over the keys in updateData and update corresponding fields
+        Object.keys(updateData).forEach((key) => {
+          material[key] = updateData[key];
         });
 
-        // save the material and check for errors
+        // Save the material and check for errors
         material
           .save()
-          .then((updatedCar) => {
+          .then((updatedMaterial) => {
             res.json({
               message: "Storage Material updated",
-              results: updatedCar,
+              results: updatedMaterial,
             });
           })
           .catch((err) => {
@@ -235,12 +238,12 @@ exports.update = function (req, res) {
           .send({ message: err.message || "Error finding material" });
       });
   } catch (err) {
-    if (err) {
-      res.status(500).send({ message: err });
-      return;
-    }
+    res
+      .status(500)
+      .send({ message: "Internal server error", description: err });
   }
 };
+
 // Handle delete material
 exports.delete = function (req, res) {
   StorageMaterial.deleteOne({
