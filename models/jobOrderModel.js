@@ -67,6 +67,22 @@ var jobOrderSchema = mongoose.Schema({
     default: "autocheck",
     required: true,
   },
+  sell_price: {
+    type: Number,
+    min: 0,
+  },
+  material_cost: {
+    type: Number,
+    min: 0,
+  },
+  material_profit: {
+    type: Number,
+    min: 0,
+  },
+  profit: {
+    type: Number,
+    min: 0,
+  },
   created_date: {
     type: Date,
     default: Date.now,

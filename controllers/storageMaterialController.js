@@ -264,19 +264,19 @@ exports.delete = function (req, res) {
 };
 
 /* WARNING: This will delete all appointments, use only on dev environment */
-exports.deleteAll = function (req, res) {
-  StorageMaterial.deleteMany({})
-    .then(() => {
-      res.json({
-        status: "success",
-        message:
-          "All materials deleted, prepare yourself, I'm going to kill you.",
-      });
-    })
-    .catch((err) => {
-      if (err) res.status(500).send({ message: err });
-    });
-};
+// exports.deleteAll = function (req, res) {
+//   StorageMaterial.deleteMany({})
+//     .then(() => {
+//       res.json({
+//         status: "success",
+//         message:
+//           "All materials deleted, prepare yourself, I'm going to kill you.",
+//       });
+//     })
+//     .catch((err) => {
+//       if (err) res.status(500).send({ message: err });
+//     });
+// };
 
 // Controller to upload and process the CSV file
 exports.uploadStorageMaterials = (req, res) => {
@@ -384,28 +384,27 @@ exports.restockMaterials = async (req, res) => {
   }
 
   try {
-    for (const material of materials) {
-      await StorageMaterial.findById(material.material_id)
-        .then((cursor) => {
-          if (!cursor) {
-            return res.status(404).send({ message: "Material not found" });
-          }
+    const updatedMaterials = [];
 
-          cursor.quantity += material.quantity;
-          cursor.save();
-          return res.json({
-            status: "success",
-            message: "Materials updated successfully",
-          });
-        })
-        .catch((error) => {
-          return res
-            .status(500)
-            .send({ message: "Invalid material", description: error });
-        });
+    for (const material of materials) {
+      const cursor = await StorageMaterial.findById(material.material_id);
+      if (!cursor) {
+        return res.status(404).json({ message: `Material ${material.material_id} not found` });
+      }
+
+      cursor.quantity += material.quantity;
+      await cursor.save();
+      updatedMaterials.push(cursor);
     }
+
+    return res.json({
+      status: "success",
+      message: "Materials updated successfully",
+      updatedMaterials,
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: "Internal server error", description: error.message });
   }
 };
+

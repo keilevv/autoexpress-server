@@ -22,6 +22,12 @@ router.post(
   jobOrderController.register
 );
 router.put(
+  "/operations/helpers/update-materials-prices",
+  [authJwt.verifyToken],
+  jobOrderController.updateConsumedMaterialsPrices
+);
+
+router.put(
   "/operations/update/job-orders/:job_order_id",
   [authJwt.verifyToken],
   jobOrderController.update

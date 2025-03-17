@@ -205,6 +205,10 @@ exports.jobOrderProjectionMaterials = [
       employee: { $first: "$employee" },
       car_plate: { $first: "$car_plate" },
       status: { $first: "$status" },
+      sell_price: { $first: "$sell_price" },
+      profit: { $first: "$profit" },
+      material_profit: { $first: "$material_profit" },
+      material_cost: { $first: "$material_cost" },
       consumed_colors: {
         $first: {
           $cond: {

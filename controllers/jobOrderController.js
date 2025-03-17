@@ -29,6 +29,7 @@ exports.register = async (req, res) => {
       car_plate: req.body.car_plate,
       status: ["pending"],
       owner: owner,
+      sell_price: req.body.sell_price,
     });
 
     // Save the job order first
@@ -78,153 +79,154 @@ exports.register = async (req, res) => {
 };
 // Handle index actions
 exports.index = async function (req, res) {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      sortBy = "created_date",
-      sortOrder,
-      ...filter
-    } = req.query;
-    let query = {};
+  const {
+    page = 1,
+    limit = 10,
+    sortBy = "created_date",
+    sortOrder,
+    ...filter
+  } = req.query;
+  let query = {};
 
-    const filterArray = helpers.getFilterArray(filter);
-    if (filter) {
-      filterArray.forEach((filterItem) => {
-        switch (filterItem.name) {
-          case "archived":
-            const archived = filterItem.value === "true" ? true : false;
-            query[filterItem.name] = archived;
-            break;
-          case "start_date":
-          case "end_date":
-            const dateFilter = {};
-            if (req.query.start_date)
-              dateFilter["$gte"] = new Date(req.query.start_date);
-            if (req.query.end_date)
-              dateFilter["$lte"] = new Date(req.query.end_date);
-            query["created_date"] = dateFilter;
-            break;
-          case "due_start_date":
-          case "due_end_date":
-            const dueDateFilter = {};
-            if (req.query.due_start_date)
-              dueDateFilter["$gte"] = new Date(req.query.due_start_date);
-            if (req.query.due_end_date)
-              dueDateFilter["$lte"] = new Date(req.query.due_end_date);
-            query["due_date"] = dueDateFilter;
-            break;
-          case "search":
-            if (filterItem.value) {
-              query["$or"] = [
-                { number: { $regex: filterItem.value, $options: "i" } },
-                { car_plate: { $regex: filterItem.value, $options: "i" } },
-              ];
-            }
-            break;
-          case "employee":
-            if (filterItem.value) {
-              query["employee"] = new mongoose.Types.ObjectId(filterItem.value);
-            }
-            break;
-          case "owner":
-            if (filterItem.value) {
-              query["owner"] = filterItem.value
-                ? filterItem.value
-                : "autoexpresss";
-            }
-            break;
-          case "status":
-            if (filterItem.value) {
-              query["status"] = [String(filterItem.value)];
-            }
-            break;
-        }
-      });
-    }
-    if (!query["status"]) {
-      query["status"] = { $ne: "completed" };
-    }
+  const filterArray = helpers.getFilterArray(filter);
+  if (filter) {
+    filterArray.forEach((filterItem) => {
+      switch (filterItem.name) {
+        case "archived":
+          const archived = filterItem.value === "true" ? true : false;
+          query[filterItem.name] = archived;
+          break;
+        case "start_date":
+        case "end_date":
+          const dateFilter = {};
+          if (req.query.start_date)
+            dateFilter["$gte"] = new Date(req.query.start_date);
+          if (req.query.end_date)
+            dateFilter["$lte"] = new Date(req.query.end_date);
+          query["created_date"] = dateFilter;
+          break;
+        case "due_start_date":
+        case "due_end_date":
+          const dueDateFilter = {};
+          if (req.query.due_start_date)
+            dueDateFilter["$gte"] = new Date(req.query.due_start_date);
+          if (req.query.due_end_date)
+            dueDateFilter["$lte"] = new Date(req.query.due_end_date);
+          query["due_date"] = dueDateFilter;
+          break;
+        case "search":
+          if (filterItem.value) {
+            query["$or"] = [
+              { number: { $regex: filterItem.value, $options: "i" } },
+              { car_plate: { $regex: filterItem.value, $options: "i" } },
+            ];
+          }
+          break;
+        case "employee":
+          if (filterItem.value) {
+            query["employee"] = new mongoose.Types.ObjectId(filterItem.value);
+          }
+          break;
+        case "owner":
+          if (filterItem.value) {
+            query["owner"] = filterItem.value
+              ? filterItem.value
+              : "autoexpresss";
+          }
+          break;
+        case "status":
+          if (filterItem.value) {
+            query["status"] = [String(filterItem.value)];
+          }
+          break;
+      }
+    });
+  }
+  if (!query["status"]) {
+    query["status"] = { $ne: "completed" };
+  }
 
-    // Apply sorting if any
-    let sortOptions = {};
-    if (sortBy && sortOrder) {
-      sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
-    } else {
-      sortOptions["created_date"] = -1;
-    }
-    sortOptions["_id"] = 1;
+  // Apply sorting if any
+  let sortOptions = {};
+  if (sortBy && sortOrder) {
+    sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+  } else {
+    sortOptions["created_date"] = -1;
+  }
+  sortOptions["_id"] = 1;
 
-    const totalJobOrders = await JobOrder.countDocuments(query);
+  const totalJobOrders = await JobOrder.countDocuments(query);
 
-    // Aggregation to calculate total price for all documents matching the filter
-    const totalPriceResult = await JobOrder.aggregate([
-      { $match: query },
-      ...jobOrderProjectionMaterials,
-      {
-        $addFields: {
-          consumedMaterialsTotal: {
-            $sum: {
-              $map: {
-                input: "$consumed_materials",
-                as: "material",
-                in: {
-                  $multiply: [
-                    "$$material.quantity",
-                    "$$material.storage_material.sell_price",
-                  ],
-                },
-              },
-            },
-          },
-          consumedColorsTotal: {
-            $sum: {
-              $map: {
-                input: "$consumed_colors",
-                as: "color",
-                in: "$$color.price",
+  // Aggregation to calculate total price for all documents matching the filter
+  const totalPriceResult = await JobOrder.aggregate([
+    { $match: query },
+    ...jobOrderProjectionMaterials,
+    {
+      $addFields: {
+        consumedMaterialsTotal: {
+          $sum: {
+            $map: {
+              input: "$consumed_materials",
+              as: "material",
+              in: {
+                $multiply: [
+                  "$$material.quantity",
+                  "$$material.storage_material.sell_price",
+                ],
               },
             },
           },
         },
-      },
-      {
-        $group: {
-          _id: null,
-          total_price: {
-            $sum: { $add: ["$consumedMaterialsTotal", "$consumedColorsTotal"] },
+        consumedColorsTotal: {
+          $sum: {
+            $map: {
+              input: "$consumed_colors",
+              as: "color",
+              in: "$$color.price",
+            },
           },
         },
       },
-    ]);
+    },
+    {
+      $group: {
+        _id: null,
+        total_price: {
+          $sum: { $add: ["$consumedMaterialsTotal", "$consumedColorsTotal"] },
+        },
+      },
+    },
+  ]);
 
-    const total_price = totalPriceResult[0]?.total_price || 0;
+  const total_price = totalPriceResult[0]?.total_price || 0;
 
-    // Retrieve paginated results with projection for the requested page
-    const jobOrders = await JobOrder.aggregate([
-      { $match: query },
-      { $sort: sortOptions },
-      { $skip: (page - 1) * limit },
-      { $limit: parseInt(limit) },
-      ...jobOrderProjectionMaterials, // Assuming this projection includes needed fields
-    ]).catch((err) => {
-      return res
-        .status(500)
-        .json({ message: "Internal server error", description: err });
-    });
-
-    return res.json({
-      count: totalJobOrders,
-      total_price,
-      message: "Job orders list retrieved successfully",
-      results: jobOrders,
-      status: "success",
-    });
-  } catch (err) {
+  // Retrieve paginated results with projection for the requested page
+  const jobOrders = await JobOrder.aggregate([
+    { $match: query },
+    { $sort: sortOptions },
+    { $skip: (page - 1) * limit },
+    { $limit: parseInt(limit) },
+    ...jobOrderProjectionMaterials, // Assuming this projection includes needed fields
+  ]).catch((err) => {
     return res
       .status(500)
       .json({ message: "Internal server error", description: err });
-  }
+  });
+
+  return res.json({
+    count: totalJobOrders,
+    total_price,
+    message: "Job orders list retrieved successfully",
+    results: jobOrders,
+    status: "success",
+  });
+  // try {
+
+  // } catch (err) {
+  //   return res
+  //     .status(500)
+  //     .json({ message: "Internal server error", description: err });
+  // }
 };
 
 exports.addConsumedMaterials = async (req, res) => {
@@ -463,6 +465,74 @@ exports.delete = function (req, res) {
     .catch((err) => {
       if (err) res.status(500).send({ message: err });
     });
+};
+
+exports.updateConsumedMaterialsPrices = async (req, res) => {
+  try {
+    // Fetch all active job orders
+    const jobOrders = await JobOrder.find({ archived: false });
+
+    // Get all unique storage material IDs from the job orders
+    const storageMaterialIds = [
+      ...new Set(
+        jobOrders.flatMap((jobOrder) =>
+          jobOrder.consumed_materials.map((cm) => cm.storage_material)
+        )
+      ),
+    ];
+
+    // Fetch all storage materials in one go
+    const storageMaterials = await StorageMaterial.find({
+      _id: { $in: storageMaterialIds },
+    });
+
+    // Create a lookup map for quick access
+    const materialMap = new Map();
+    storageMaterials.forEach((material) => {
+      materialMap.set(material._id.toString(), material);
+    });
+
+    // Iterate through job orders and update consumed materials
+    for (const jobOrder of jobOrders) {
+      let hasUpdates = false;
+
+      jobOrder.consumed_materials.forEach((consumedMaterial) => {
+        const material = materialMap.get(
+          consumedMaterial.storage_material.toString()
+        );
+        if (material) {
+          const newSellPrice =
+            material.price + material.price * (material.margin / 100);
+
+          if (consumedMaterial.sell_price !== newSellPrice) {
+            consumedMaterial.sell_price = newSellPrice;
+            hasUpdates = true;
+          }
+        }
+      });
+
+      const material_cost = jobOrder.consumed_materials.reduce(
+        (total, cm) => total + cm.quantity * cm.sell_price,
+        0
+      );
+
+      console.log("material_cost", material_cost);
+
+      // Save only if changes were made
+      if (hasUpdates) {
+        await jobOrder.save();
+      }
+    }
+
+    return res.status(200).json({
+      message: "Consumed material prices updated successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Internal server error",
+      description: error.message,
+    });
+  }
 };
 
 // /* WARNING: This will delete all employees, use only on dev environment */
