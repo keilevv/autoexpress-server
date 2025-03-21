@@ -158,25 +158,24 @@ exports.index = async function (req, res) {
   const totalJobOrders = await JobOrder.countDocuments(query);
 
   // Aggregation to calculate total price for all documents matching the filter
-  const totalPriceResult = await JobOrder.aggregate([
+  const totalCostResult = await JobOrder.aggregate([
     { $match: query },
     ...jobOrderProjectionMaterials,
     {
       $addFields: {
+        // Total cost of consumed materials
         consumedMaterialsTotal: {
           $sum: {
             $map: {
               input: "$consumed_materials",
               as: "material",
               in: {
-                $multiply: [
-                  "$$material.quantity",
-                  "$$material.storage_material.sell_price",
-                ],
+                $multiply: ["$$material.quantity", "$$material.price"],
               },
             },
           },
         },
+        // Total cost of consumed colors
         consumedColorsTotal: {
           $sum: {
             $map: {
@@ -186,19 +185,45 @@ exports.index = async function (req, res) {
             },
           },
         },
+        // Total material profit calculation
+        materialProfitTotal: {
+          $sum: {
+            $map: {
+              input: "$consumed_materials",
+              as: "material",
+              in: {
+                $multiply: [
+                  "$$material.quantity",
+                  { $subtract: ["$$material.sell_price", "$$material.price"] },
+                ],
+              },
+            },
+          },
+        },
       },
     },
     {
       $group: {
         _id: null,
-        total_price: {
+        total_cost: {
           $sum: { $add: ["$consumedMaterialsTotal", "$consumedColorsTotal"] },
         },
+        total_material_profit: { $sum: "$materialProfitTotal" },
+        total_sell_price: { $sum: "$sell_price" }, // Sum all job orders' sell_price
       },
     },
   ]);
 
-  const total_price = totalPriceResult[0]?.total_price || 0;
+  const total_cost = totalCostResult[0]?.total_cost || 0;
+  const total_material_profit = totalCostResult[0]?.total_material_profit || 0;
+  const total_sell_price = totalCostResult[0]?.total_sell_price || 0;
+
+  const total_sell_profit =
+    total_sell_price -
+    (total_cost +
+      (total_material_profit > 0
+        ? total_material_profit
+        : -total_material_profit));
 
   // Retrieve paginated results with projection for the requested page
   const jobOrders = await JobOrder.aggregate([
@@ -215,18 +240,13 @@ exports.index = async function (req, res) {
 
   return res.json({
     count: totalJobOrders,
-    total_price,
+    total_cost,
+    total_material_profit,
+    total_sell_profit,
     message: "Job orders list retrieved successfully",
     results: jobOrders,
     status: "success",
   });
-  // try {
-
-  // } catch (err) {
-  //   return res
-  //     .status(500)
-  //     .json({ message: "Internal server error", description: err });
-  // }
 };
 
 exports.addConsumedMaterials = async (req, res) => {
@@ -272,13 +292,13 @@ exports.addConsumedMaterials = async (req, res) => {
     for (let removedItem of removedMaterials) {
       if (!removedItem.storage_material) continue; // Skip invalid entries
 
-      const consumptionMaterial = await StorageMaterial.findById(
+      const consumedMaterial = await StorageMaterial.findById(
         removedItem.storage_material
       );
 
-      if (consumptionMaterial) {
-        consumptionMaterial.quantity += removedItem.quantity;
-        await consumptionMaterial.save();
+      if (consumedMaterial) {
+        consumedMaterial.quantity += removedItem.quantity;
+        await consumedMaterial.save();
       }
     }
 
@@ -295,11 +315,11 @@ exports.addConsumedMaterials = async (req, res) => {
         return res.status(400).send({ message: "Material en lista invalido" });
       }
 
-      const consumptionMaterial = await StorageMaterial.findById(
+      const consumedMaterial = await StorageMaterial.findById(
         new mongoose.Types.ObjectId(materialItem.storage_material)
       );
 
-      if (!consumptionMaterial) {
+      if (!consumedMaterial) {
         return res.status(404).send({
           message: `Material con ID ${materialItem.storage_material} no encontrado`,
         });
@@ -320,16 +340,16 @@ exports.addConsumedMaterials = async (req, res) => {
         quantityDifference = materialItem.quantity - existingMaterial.quantity;
 
         if (quantityDifference > 0) {
-          // Subtract the difference from the consumptionMaterial stock
-          if (consumptionMaterial.quantity < quantityDifference) {
+          // Subtract the difference from the consumedMaterial stock
+          if (consumedMaterial.quantity < quantityDifference) {
             return res.status(400).send({
               message: `Not enough quantity for material ID ${materialItem.storage_material}`,
             });
           }
-          consumptionMaterial.quantity -= quantityDifference;
+          consumedMaterial.quantity -= quantityDifference;
         } else if (quantityDifference < 0) {
-          // Add the difference back to the consumptionMaterial stock
-          consumptionMaterial.quantity += Math.abs(quantityDifference);
+          // Add the difference back to the consumedMaterial stock
+          consumedMaterial.quantity += Math.abs(quantityDifference);
         }
 
         // Update the quantity, price, and sell_price
@@ -339,13 +359,13 @@ exports.addConsumedMaterials = async (req, res) => {
           materialItem.sell_price ?? materialItem.price * 1.1; // Default if not provided
       } else {
         // If it's a new material, just add it to the consumed_materials array
-        if (consumptionMaterial.quantity < materialItem.quantity) {
+        if (consumedMaterial.quantity < materialItem.quantity) {
           return res.status(400).send({
             message: `Not enough quantity for material ID ${materialItem.storage_material}`,
           });
         }
 
-        consumptionMaterial.quantity -= materialItem.quantity;
+        consumedMaterial.quantity -= materialItem.quantity;
         jobOrder.consumed_materials.push({
           storage_material: materialItem.storage_material,
           quantity: materialItem.quantity,
@@ -355,7 +375,16 @@ exports.addConsumedMaterials = async (req, res) => {
       }
 
       // Save the updated consumption material
-      await consumptionMaterial.save();
+      await consumedMaterial.save();
+    }
+
+    if (!jobOrder.sell_price) {
+      jobOrder.sell_price = jobOrder.consumed_materials.reduce(
+        (total, material) => {
+          return total + material.sell_price * material.quantity;
+        },
+        0
+      );
     }
 
     // Save the updated job order

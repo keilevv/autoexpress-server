@@ -45,7 +45,7 @@ exports.register = async (req, res) => {
       reference: reference,
       unit: unit,
       quantity: quantity,
-      price: price,
+      price: price ?? 0,
       owner: owner ? owner : "autocheck",
       caution_quantity: caution_quantity ? caution_quantity : 0,
       margin: margin ? margin : 10,
@@ -312,63 +312,7 @@ exports.uploadStorageMaterials = (req, res) => {
 
 exports.syncSchema = async (req, res) => {
   try {
-    console.log("Starting schema synchronization...");
-
-    // Get the expected schema fields from the model
-    const schemaPaths = jobOrderModel.schema.paths;
-    const expectedFields = Object.keys(schemaPaths);
-
-    // Retrieve all storage materials
-    const materials = await jobOrderModel.find({});
-
-    for (const material of materials) {
-      let updatedFields = {};
-      let removeFields = [];
-
-      // Add missing fields with default values
-      expectedFields.forEach((field) => {
-        if (!Object.prototype.hasOwnProperty.call(material, field)) {
-          let defaultValue = schemaPaths[field].options.default;
-
-          // If the default is a function (like Date.now), call it
-          if (typeof defaultValue === "function") {
-            defaultValue = defaultValue();
-          }
-
-          if (defaultValue !== undefined) {
-            updatedFields[field] = defaultValue;
-          }
-        }
-      });
-
-      // Remove extra fields not in the schema
-      Object.keys(material._doc).forEach((field) => {
-        if (!expectedFields.includes(field)) {
-          removeFields.push(field);
-        }
-      });
-
-      // Debugging: Check missing fields before update
-      console.log(
-        `Before update: ID=${material._id}, missing fields:`,
-        updatedFields
-      );
-
-      // Apply updates if necessary
-      if (Object.keys(updatedFields).length > 0 || removeFields.length > 0) {
-        await jobOrderModel.updateOne(
-          { _id: material._id },
-          {
-            $set: updatedFields,
-            $unset: removeFields.reduce(
-              (acc, field) => ({ ...acc, [field]: "" }),
-              {}
-            ),
-          }
-        );
-        console.log(`Updated ID=${material._id}, Set:`, updatedFields);
-      }
-    }
+    await helpers.SyncSchema(StorageMaterial);
     res.status(200).json({ message: "Schema synchronization complete" });
   } catch (error) {
     res
@@ -389,7 +333,9 @@ exports.restockMaterials = async (req, res) => {
     for (const material of materials) {
       const cursor = await StorageMaterial.findById(material.material_id);
       if (!cursor) {
-        return res.status(404).json({ message: `Material ${material.material_id} not found` });
+        return res
+          .status(404)
+          .json({ message: `Material ${material.material_id} not found` });
       }
 
       cursor.quantity += material.quantity;
@@ -404,7 +350,8 @@ exports.restockMaterials = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Internal server error", description: error.message });
+    return res
+      .status(500)
+      .json({ message: "Internal server error", description: error.message });
   }
 };
-
