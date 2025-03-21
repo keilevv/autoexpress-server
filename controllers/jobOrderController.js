@@ -243,6 +243,7 @@ exports.index = async function (req, res) {
     total_cost,
     total_material_profit,
     total_sell_profit,
+    total_sell_price,
     message: "Job orders list retrieved successfully",
     results: jobOrders,
     status: "success",
