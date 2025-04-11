@@ -49,8 +49,7 @@ exports.register = async (req, res) => {
         // Check if quantity goes negative
         if (!updatedMaterial || updatedMaterial.quantity < 0) {
           throw new Error(
-            `Stock insuficiente para : ${material.name} (remaining quantity: ${
-              updatedMaterial ? updatedMaterial.quantity : 0
+            `Stock insuficiente para : ${material.name} (remaining quantity: ${updatedMaterial ? updatedMaterial.quantity : 0
             })`
           );
         }
@@ -86,32 +85,27 @@ exports.index = async function (req, res) {
     sortOrder,
     ...filter
   } = req.query;
-  let query = {};
 
+  let query = {};
   const filterArray = helpers.getFilterArray(filter);
   if (filter) {
     filterArray.forEach((filterItem) => {
       switch (filterItem.name) {
         case "archived":
-          const archived = filterItem.value === "true" ? true : false;
-          query[filterItem.name] = archived;
+          query[filterItem.name] = filterItem.value === "true";
           break;
         case "start_date":
         case "end_date":
           const dateFilter = {};
-          if (req.query.start_date)
-            dateFilter["$gte"] = new Date(req.query.start_date);
-          if (req.query.end_date)
-            dateFilter["$lte"] = new Date(req.query.end_date);
+          if (req.query.start_date) dateFilter["$gte"] = new Date(req.query.start_date);
+          if (req.query.end_date) dateFilter["$lte"] = new Date(req.query.end_date);
           query["created_date"] = dateFilter;
           break;
         case "due_start_date":
         case "due_end_date":
           const dueDateFilter = {};
-          if (req.query.due_start_date)
-            dueDateFilter["$gte"] = new Date(req.query.due_start_date);
-          if (req.query.due_end_date)
-            dueDateFilter["$lte"] = new Date(req.query.due_end_date);
+          if (req.query.due_start_date) dueDateFilter["$gte"] = new Date(req.query.due_start_date);
+          if (req.query.due_end_date) dueDateFilter["$lte"] = new Date(req.query.due_end_date);
           query["due_date"] = dueDateFilter;
           break;
         case "search":
@@ -129,9 +123,7 @@ exports.index = async function (req, res) {
           break;
         case "owner":
           if (filterItem.value) {
-            query["owner"] = filterItem.value
-              ? filterItem.value
-              : "autoexpresss";
+            query["owner"] = filterItem.value || "autoexpresss";
           }
           break;
         case "status":
@@ -142,11 +134,11 @@ exports.index = async function (req, res) {
       }
     });
   }
+
   if (!query["status"]) {
     query["status"] = { $ne: "completed" };
   }
 
-  // Apply sorting if any
   let sortOptions = {};
   if (sortBy && sortOrder) {
     sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
@@ -157,59 +149,16 @@ exports.index = async function (req, res) {
 
   const totalJobOrders = await JobOrder.countDocuments(query);
 
-  // Aggregation to calculate total price for all documents matching the filter
   const totalCostResult = await JobOrder.aggregate([
     { $match: query },
     ...jobOrderProjectionMaterials,
     {
-      $addFields: {
-        // Total cost of consumed materials
-        consumedMaterialsTotal: {
-          $sum: {
-            $map: {
-              input: "$consumed_materials",
-              as: "material",
-              in: {
-                $multiply: ["$$material.quantity", "$$material.price"],
-              },
-            },
-          },
-        },
-        // Total cost of consumed colors
-        consumedColorsTotal: {
-          $sum: {
-            $map: {
-              input: "$consumed_colors",
-              as: "color",
-              in: "$$color.price",
-            },
-          },
-        },
-        // Total material profit calculation
-        materialProfitTotal: {
-          $sum: {
-            $map: {
-              input: "$consumed_materials",
-              as: "material",
-              in: {
-                $multiply: [
-                  "$$material.quantity",
-                  { $subtract: ["$$material.sell_price", "$$material.price"] },
-                ],
-              },
-            },
-          },
-        },
-      },
-    },
-    {
       $group: {
         _id: null,
-        total_cost: {
-          $sum: { $add: ["$consumedMaterialsTotal", "$consumedColorsTotal"] },
-        },
-        total_material_profit: { $sum: "$materialProfitTotal" },
-        total_sell_price: { $sum: "$sell_price" }, // Sum all job orders' sell_price
+        total_cost: { $sum: "$materials_cost" },
+        total_material_profit: { $sum: "$materials_profit" },
+        total_sell_price: { $sum: "$sell_price" },
+        total_profit: { $sum: "$profit" },
       },
     },
   ]);
@@ -217,33 +166,24 @@ exports.index = async function (req, res) {
   const total_cost = totalCostResult[0]?.total_cost || 0;
   const total_material_profit = totalCostResult[0]?.total_material_profit || 0;
   const total_sell_price = totalCostResult[0]?.total_sell_price || 0;
+  const total_profit = totalCostResult[0]?.total_profit || 0;
 
-  const total_sell_profit =
-    total_sell_price -
-    (total_cost +
-      (total_material_profit > 0
-        ? total_material_profit
-        : -total_material_profit));
-
-  // Retrieve paginated results with projection for the requested page
   const jobOrders = await JobOrder.aggregate([
     { $match: query },
     { $sort: sortOptions },
     { $skip: (page - 1) * limit },
     { $limit: parseInt(limit) },
-    ...jobOrderProjectionMaterials, // Assuming this projection includes needed fields
+    ...jobOrderProjectionMaterials,
   ]).catch((err) => {
-    return res
-      .status(500)
-      .json({ message: "Internal server error", description: err });
+    return res.status(500).json({ message: "Internal server error", description: err });
   });
 
   return res.json({
     count: totalJobOrders,
     total_cost,
     total_material_profit,
-    total_sell_profit,
     total_sell_price,
+    total_profit,
     message: "Job orders list retrieved successfully",
     results: jobOrders,
     status: "success",
@@ -331,7 +271,7 @@ exports.addConsumedMaterials = async (req, res) => {
         (item) =>
           item.storage_material &&
           item.storage_material.toString() ===
-            materialItem.storage_material.toString()
+          materialItem.storage_material.toString()
       );
 
       let quantityDifference = 0;
@@ -417,16 +357,51 @@ exports.get = function (req, res) {
           _id: job_order_id,
         },
       },
-    ].concat(jobOrderProjectionMaterials)
+    ].concat(jobOrderProjectionMaterials) // <-- tu pipeline que hace el populate de materiales
   )
     .then((cursor) => {
       if (!cursor || !cursor.length) {
         return res.status(404).send({ message: "JobOrder not found" });
       }
+
+      const jobOrder = cursor[0];
+
+      // Calcular material_cost, material_profit
+      let materialCost = 0;
+      let materialProfit = 0;
+      let colorsCost = 0
+
+      if (Array.isArray(jobOrder.consumed_materials)) {
+        jobOrder.consumed_materials.forEach((item) => {
+          const cost = item.price * item.quantity;
+          const sell = item.sell_price * item.quantity;
+          materialCost += cost;
+          materialProfit += (sell - cost);
+        });
+      }
+
+      // Incluir colores en el costo
+      if (Array.isArray(jobOrder.consumed_colors)) {
+        jobOrder.consumed_colors.forEach((color) => {
+          colorsCost += color.price;
+          // NOTA: asumimos que los colores no se revenden individualmente, solo cuentan como costo
+        });
+      }
+
+      // Calcular profit total si hay sell_price
+      const totalSellPrice = jobOrder.sell_price || 0;
+      const profit = totalSellPrice - materialCost - colorsCost;
+
+      // Agregar los campos calculados al resultado
+      jobOrder.materials_cost = materialCost;
+      jobOrder.materials_profit = materialProfit;
+      jobOrder.profit = profit;
+      jobOrder.colors_cost = colorsCost;
+
       return res.json({
         status: "success",
         message: "JobOrder retrieved successfully",
-        results: cursor[0],
+        results: jobOrder,
       });
     })
     .catch((error) => {
@@ -435,6 +410,7 @@ exports.get = function (req, res) {
         .send({ message: "Internal server error", description: error });
     });
 };
+
 
 // Handle update car from id
 exports.update = function (req, res) {

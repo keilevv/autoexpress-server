@@ -81,6 +81,9 @@ exports.helpers = {
       }
     }
   },
+  formatNumber(num) {
+    return Number.isInteger(num) ? num.toString() : parseFloat(num.toFixed(2)).toString();
+  }
 };
 
 exports.colorCodingList = [

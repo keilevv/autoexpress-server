@@ -206,18 +206,8 @@ exports.jobOrderProjectionMaterials = [
       car_plate: { $first: "$car_plate" },
       status: { $first: "$status" },
       sell_price: { $first: "$sell_price" },
-      profit: { $first: "$profit" },
-      material_profit: { $first: "$material_profit" },
-      material_cost: { $first: "$material_cost" },
-      consumed_colors: {
-        $first: {
-          $cond: {
-            if: { $eq: ["$consumed_colors", []] }, // Handle empty consumed_colors
-            then: [],
-            else: "$consumed_colors",
-          },
-        },
-      },
+      created_date: { $first: "$created_date" },
+      consumed_colors: { $first: "$consumed_colors" },
       consumed_materials: {
         $push: {
           quantity: "$consumed_materials.quantity",
@@ -226,18 +216,65 @@ exports.jobOrderProjectionMaterials = [
           sell_price: "$consumed_materials.sell_price",
         },
       },
-      created_date: { $first: "$created_date" },
     },
   },
   {
     $addFields: {
-      // Ensure consumed_materials is empty if there are no valid entries
       consumed_materials: {
         $cond: {
-          if: { $eq: ["$consumed_materials", [{}]] }, // Check for empty object in consumed_materials
+          if: { $eq: ["$consumed_materials", [{}]] },
           then: [],
           else: "$consumed_materials",
         },
+      },
+      materials_cost: {
+        $sum: {
+          $map: {
+            input: "$consumed_materials",
+            as: "mat",
+            in: {
+              $multiply: ["$$mat.quantity", "$$mat.price"],
+            },
+          },
+        },
+      },
+      colors_cost: {
+        $sum: {
+          $map: {
+            input: "$consumed_colors",
+            as: "color",
+            in: "$$color.price",
+          },
+        },
+      },
+    },
+  },
+  {
+    $addFields: {
+      materials_cost: "$materials_cost",
+      materials_profit: {
+        $sum: {
+          $map: {
+            input: "$consumed_materials",
+            as: "mat",
+            in: {
+              $multiply: [
+                "$$mat.quantity",
+                { $subtract: ["$$mat.sell_price", "$$mat.price"] },
+              ],
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    $addFields: {
+      profit: {
+        $subtract: [
+          "$sell_price",
+          { $add: ["$materials_cost", "$materials_profit"] },
+        ],
       },
     },
   },
