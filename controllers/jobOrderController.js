@@ -49,7 +49,8 @@ exports.register = async (req, res) => {
         // Check if quantity goes negative
         if (!updatedMaterial || updatedMaterial.quantity < 0) {
           throw new Error(
-            `Stock insuficiente para : ${material.name} (remaining quantity: ${updatedMaterial ? updatedMaterial.quantity : 0
+            `Stock insuficiente para : ${material.name} (remaining quantity: ${
+              updatedMaterial ? updatedMaterial.quantity : 0
             })`
           );
         }
@@ -88,6 +89,7 @@ exports.index = async function (req, res) {
 
   let query = {};
   const filterArray = helpers.getFilterArray(filter);
+
   if (filter) {
     filterArray.forEach((filterItem) => {
       switch (filterItem.name) {
@@ -97,15 +99,19 @@ exports.index = async function (req, res) {
         case "start_date":
         case "end_date":
           const dateFilter = {};
-          if (req.query.start_date) dateFilter["$gte"] = new Date(req.query.start_date);
-          if (req.query.end_date) dateFilter["$lte"] = new Date(req.query.end_date);
+          if (req.query.start_date)
+            dateFilter["$gte"] = new Date(req.query.start_date);
+          if (req.query.end_date)
+            dateFilter["$lte"] = new Date(req.query.end_date);
           query["created_date"] = dateFilter;
           break;
         case "due_start_date":
         case "due_end_date":
           const dueDateFilter = {};
-          if (req.query.due_start_date) dueDateFilter["$gte"] = new Date(req.query.due_start_date);
-          if (req.query.due_end_date) dueDateFilter["$lte"] = new Date(req.query.due_end_date);
+          if (req.query.due_start_date)
+            dueDateFilter["$gte"] = new Date(req.query.due_start_date);
+          if (req.query.due_end_date)
+            dueDateFilter["$lte"] = new Date(req.query.due_end_date);
           query["due_date"] = dueDateFilter;
           break;
         case "search":
@@ -135,59 +141,57 @@ exports.index = async function (req, res) {
     });
   }
 
-  if (!query["status"]) {
-    query["status"] = { $ne: "completed" };
-  }
+  const sortOptions = helpers.getSortOptions();
 
-  let sortOptions = {};
-  if (sortBy && sortOrder) {
-    sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
-  } else {
-    sortOptions["created_date"] = -1;
-  }
-  sortOptions["_id"] = 1;
+  try {
+    const totalJobOrders = await JobOrder.countDocuments(query);
 
-  const totalJobOrders = await JobOrder.countDocuments(query);
-
-  const totalCostResult = await JobOrder.aggregate([
-    { $match: query },
-    ...jobOrderProjectionMaterials,
-    {
-      $group: {
-        _id: null,
-        total_cost: { $sum: "$materials_cost" },
-        total_material_profit: { $sum: "$materials_profit" },
-        total_sell_price: { $sum: "$sell_price" },
-        total_profit: { $sum: "$profit" },
+    const totalCostResult = await JobOrder.aggregate([
+      { $match: query },
+      ...jobOrderProjectionMaterials,
+      {
+        $group: {
+          _id: null,
+          total_cost: { $sum: "$materials_cost" },
+          total_material_profit: { $sum: "$materials_profit" },
+          total_sell_price: { $sum: "$sell_price" },
+          total_profit: { $sum: "$profit" },
+        },
       },
-    },
-  ]);
+    ]);
 
-  const total_cost = totalCostResult[0]?.total_cost || 0;
-  const total_material_profit = totalCostResult[0]?.total_material_profit || 0;
-  const total_sell_price = totalCostResult[0]?.total_sell_price || 0;
-  const total_profit = totalCostResult[0]?.total_profit || 0;
+    const total_cost = totalCostResult[0]?.total_cost || 0;
+    const total_material_profit =
+      totalCostResult[0]?.total_material_profit || 0;
+    const total_sell_price = totalCostResult[0]?.total_sell_price || 0;
+    const total_profit = totalCostResult[0]?.total_profit || 0;
 
-  const jobOrders = await JobOrder.aggregate([
-    { $match: query },
-    { $sort: sortOptions },
-    { $skip: (page - 1) * limit },
-    { $limit: parseInt(limit) },
-    ...jobOrderProjectionMaterials,
-  ]).catch((err) => {
-    return res.status(500).json({ message: "Internal server error", description: err });
-  });
+    // Important: Apply projection before sorting to ensure consistent results
+    const jobOrders = await JobOrder.aggregate([
+      { $match: query },
+      ...jobOrderProjectionMaterials,
+      { $sort: sortOptions },
+      { $skip: (page - 1) * parseInt(limit) },
+      { $limit: parseInt(limit) },
+    ]);
 
-  return res.json({
-    count: totalJobOrders,
-    total_cost,
-    total_material_profit,
-    total_sell_price,
-    total_profit,
-    message: "Job orders list retrieved successfully",
-    results: jobOrders,
-    status: "success",
-  });
+    return res.json({
+      count: totalJobOrders,
+      total_cost,
+      total_material_profit,
+      total_sell_price,
+      total_profit,
+      message: "Job orders list retrieved successfully",
+      results: jobOrders,
+      status: "success",
+    });
+  } catch (err) {
+    console.error("JobOrder index error:", err);
+    return res.status(500).json({
+      message: "Internal server error",
+      description: err.message,
+    });
+  }
 };
 
 exports.addConsumedMaterials = async (req, res) => {
@@ -271,7 +275,7 @@ exports.addConsumedMaterials = async (req, res) => {
         (item) =>
           item.storage_material &&
           item.storage_material.toString() ===
-          materialItem.storage_material.toString()
+            materialItem.storage_material.toString()
       );
 
       let quantityDifference = 0;
@@ -369,14 +373,14 @@ exports.get = function (req, res) {
       // Calcular material_cost, material_profit
       let materialCost = 0;
       let materialProfit = 0;
-      let colorsCost = 0
+      let colorsCost = 0;
 
       if (Array.isArray(jobOrder.consumed_materials)) {
         jobOrder.consumed_materials.forEach((item) => {
           const cost = item.price * item.quantity;
           const sell = item.sell_price * item.quantity;
           materialCost += cost;
-          materialProfit += (sell - cost);
+          materialProfit += sell - cost;
         });
       }
 
@@ -410,7 +414,6 @@ exports.get = function (req, res) {
         .send({ message: "Internal server error", description: error });
     });
 };
-
 
 // Handle update car from id
 exports.update = function (req, res) {

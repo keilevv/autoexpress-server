@@ -110,14 +110,7 @@ exports.index = async function (req, res) {
     });
   }
 
-  // Apply sorting if any
-  let sortOptions = {};
-  if (sortBy && sortOrder) {
-    sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
-  } else {
-    sortOptions["created_date"] = -1;
-  }
-  sortOptions["_id"] = 1;
+  let sortOptions = helpers.getSortOptions();
 
   try {
     const materials = await StorageMaterial.aggregate([

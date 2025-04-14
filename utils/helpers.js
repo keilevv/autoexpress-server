@@ -82,8 +82,31 @@ exports.helpers = {
     }
   },
   formatNumber(num) {
-    return Number.isInteger(num) ? num.toString() : parseFloat(num.toFixed(2)).toString();
-  }
+    return Number.isInteger(num)
+      ? num.toString()
+      : parseFloat(num.toFixed(2)).toString();
+  },
+  getSortOptions(query = [], sortBy = "created_date", sortOrder = "desc") {
+    // Default filter to exclude completed
+    if (!query["status"]) {
+      query["status"] = { $ne: "completed" };
+    }
+
+    // Optional: exclude records with missing created_date
+    query["created_date"] = query["created_date"] || {};
+    query["created_date"]["$exists"] = true;
+
+    // Setup sort options
+    let sortOptions = {};
+    console.log("sortBy", sortBy);
+    if (sortBy && sortOrder) {
+      sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+      sortOptions["_id"] = sortOrder === "desc" ? -1 : 1; // tie-breaker
+    } else {
+      sortOptions = { created_date: -1, _id: -1 }; // default sort
+    }
+    return sortOptions;
+  },
 };
 
 exports.colorCodingList = [
