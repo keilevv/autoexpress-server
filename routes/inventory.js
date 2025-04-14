@@ -37,6 +37,11 @@ router.delete(
   [authJwt.verifyToken],
   storageMaterialController.delete
 );
+router.post(
+  "/operations/update/update-margin/storage/",
+  [authJwt.verifyToken],
+  storageMaterialController.changeMaterialsMargin
+);
 
 router.post(
   "/operations/load-storage-materials",

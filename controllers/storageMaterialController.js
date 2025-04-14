@@ -300,7 +300,6 @@ exports.uploadStorageMaterials = (req, res) => {
       });
     })
     .on("end", async () => {
-      console.log("materials", materials);
       try {
         await StorageMaterial.insertMany(materials);
         res.json({ message: "CSV data imported successfully!" });
@@ -354,4 +353,21 @@ exports.restockMaterials = async (req, res) => {
       .status(500)
       .json({ message: "Internal server error", description: error.message });
   }
+};
+
+exports.changeMaterialsMargin = async (req, res) => {
+  StorageMaterial.updateMany(
+    {},
+    { $set: { margin: req.body.margin } },
+    { new: true }
+  )
+    .then((result) => {
+      res.json({
+        message: "Storage Material margin updated",
+        results: result,
+      });
+    })
+    .catch((err) => {
+      res.status(500).send({ message: err });
+    });
 };
