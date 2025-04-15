@@ -98,7 +98,6 @@ exports.helpers = {
 
     // Setup sort options
     let sortOptions = {};
-    console.log("sortBy", sortBy);
     if (sortBy && sortOrder) {
       sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
       sortOptions["_id"] = sortOrder === "desc" ? -1 : 1; // tie-breaker
