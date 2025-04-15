@@ -79,7 +79,13 @@ exports.register = async (req, res) => {
 // Handle index actions
 exports.index = async function (req, res) {
   try {
-    const { page = 1, limit = 10, sortBy = "created_date", sortOrder, ...filter } = req.query;
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = "created_date",
+      sortOrder,
+      ...filter
+    } = req.query;
     let query = {};
 
     const filterArray = helpers.getFilterArray(filter);
@@ -119,22 +125,16 @@ exports.index = async function (req, res) {
                 : "autoexpresss";
             }
             break;
-            case "status":
-              if (filterItem.value) {
-                query["status"] = [String(filterItem.value)];
-              }
-              break;
+          case "status":
+            if (filterItem.value) {
+              query["status"] = [String(filterItem.value)];
+            }
+            break;
         }
       });
     }
 
-    let sortOptions = {};
-    if (sortBy && sortOrder) {
-      sortOptions[sortBy] = sortOrder === "desc" ? 1 : -1;
-    } else {
-      sortOptions["date"] = 1;
-    }
-    sortOptions["_id"] = 1;
+    let sortOptions = helpers.getSortOptions();
 
     const totalJobOrders = await JobOrder.countDocuments(query);
 
