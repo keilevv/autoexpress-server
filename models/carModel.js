@@ -24,15 +24,6 @@ var carSchema = mongoose.Schema({
   },
   color: {
     type: String,
-    required: true,
-  },
-  vin: {
-    type: String,
-    required: true,
-  },
-  doors: {
-    type: Number,
-    default: 4,
   },
   clients: [
     {

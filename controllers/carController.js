@@ -9,15 +9,12 @@ const { helpers } = require("../utils/helpers");
 const dayjs = require("dayjs");
 
 exports.register = (req, res) => {
-  if (!regex.commonRegex.vin.test(req.body.vin)) {
-    return res.status(400).json({ error: "Invalid vin format." });
-  }
+
   if (!regex.commonRegex.carPlate.test(req.body.plate)) {
     return res.status(400).json({ error: "Invalid car plate format." });
   }
 
   const car = new Car({
-    vin: String(req.body.vin).toUpperCase(),
     brand: req.body.brand,
     model: req.body.model,
     year: req.body.year,
