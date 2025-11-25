@@ -83,7 +83,7 @@ exports.index = async function (req, res) {
       page = 1,
       limit = 10,
       sortBy = "created_date",
-      sortOrder,
+      sortOrder = "desc",
       ...filter
     } = req.query;
     let query = {};
@@ -118,6 +118,7 @@ exports.index = async function (req, res) {
               query["employee"] = new mongoose.Types.ObjectId(filterItem.value);
             }
             break;
+            b;
           case "owner":
             if (filterItem.value) {
               query["owner"] = filterItem.value
@@ -134,13 +135,30 @@ exports.index = async function (req, res) {
       });
     }
 
-    let sortOptions = helpers.getSortOptions();
+    let sortOptions = helpers.getSortOptions(query, sortBy, sortOrder);
 
     const totalJobOrders = await JobOrder.countDocuments(query);
+    const totalPriceQuery = { ...query };
+
+    if (
+      !(
+        "$gte" in totalPriceQuery.created_date ||
+        "$lte" in totalPriceQuery.created_date
+      )
+    ) {
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const startOfYear = new Date(currentYear, 0, 1);
+      const startOfNextYear = new Date(currentYear + 1, 0, 1);
+      totalPriceQuery.created_date = {
+        $gte: startOfYear,
+        $lt: startOfNextYear,
+      };
+    }
 
     // Aggregation to calculate total price for all documents matching the filter
     const totalPriceResult = await JobOrder.aggregate([
-      { $match: query },
+      { $match: totalPriceQuery },
       ...jobOrderProjectionMaterials,
       {
         $addFields: {
