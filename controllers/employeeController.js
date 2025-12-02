@@ -195,21 +195,27 @@ exports.update = function (req, res) {
 };
 // Handle delete employee
 exports.delete = function (req, res) {
-  Employee.deleteOne({
-    _id: req.params.employee_id,
-  })
-    .then((car) => {
-      if (car) {
-        return res.json({
-          status: "success",
-          message: "Employee deleted successfully!",
-        });
-      }
-      return res.status(400).send({ message: "Employee not found!" });
+  try {
+    Employee.deleteOne({
+      _id: req.params.employee_id,
     })
-    .catch((err) => {
-      if (err) res.status(500).send({ message: err });
-    });
+      .then((employee) => {
+        if (employee) {
+          return res.json({
+            status: "success",
+            message: "Employee deleted successfully!",
+          });
+        }
+        return res.status(404).send({ message: "Employee not found!" });
+      })
+      .catch((err) => {
+        if (err) res.status(500).send({ message: err });
+      });
+  } catch (err) {
+    return res
+      .status(500)
+      .json({ message: "Internal server error", description: err });
+  }
 };
 
 // /* WARNING: This will delete all employees, use only on dev environment */
