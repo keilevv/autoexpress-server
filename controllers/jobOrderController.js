@@ -2,10 +2,6 @@
 // Import Models
 JobOrder = require("../models/jobOrderModel");
 ConsumptionMaterial = require("../models/consumptionMaterialModel");
-const {
-  jobOrderProjection,
-  jobOrderProjectionMaterials,
-} = require("./aggregations");
 
 const { helpers } = require("../utils/helpers");
 const mongoose = require("mongoose");
@@ -146,41 +142,30 @@ exports.index = async function (req, res) {
       };
     }
 
-    const totalPriceAgg = await JobOrder.aggregate([
-      { $match: totalPriceMatch },
-      ...jobOrderProjectionMaterials,
-      {
-        $addFields: {
-          consumedMaterialsTotal: {
-            $sum: {
-              $map: {
-                input: "$consumed_materials",
-                as: "material",
-                in: {
-                  $multiply: ["$$material.quantity", "$$material.storage_material.price"],
-                },
-              },
-            },
-          },
-          consumedColorsTotal: {
-            $sum: {
-              $map: {
-                input: "$consumed_colors",
-                as: "color",
-                in: "$$color.price",
-              },
-            },
-          },
+    const totalPriceOrders = await JobOrder.find(totalPriceMatch)
+      .populate({
+        path: "consumed_materials.consumption_material",
+        populate: { path: "material", model: "StorageMaterial" },
+      })
+      .populate("employee")
+      .lean();
+
+    const total_price = totalPriceOrders.reduce((acc, order) => {
+      const materialsTotal = (order.consumed_materials || []).reduce(
+        (sum, item) => {
+          const price = item.consumption_material?.material?.price || 0;
+          return sum + (item.quantity || 0) * price;
         },
-      },
-      {
-        $group: {
-          _id: null,
-          total_price: { $sum: { $add: ["$consumedMaterialsTotal", "$consumedColorsTotal"] } },
-        },
-      },
-    ]);
-    const total_price = totalPriceAgg[0]?.total_price || 0;
+        0
+      );
+
+      const colorsTotal = (order.consumed_colors || []).reduce(
+        (sum, color) => sum + (color.price || 0),
+        0
+      );
+
+      return acc + materialsTotal + colorsTotal;
+    }, 0);
 
     /* ---------- 1️⃣ Total count ---------- */
     const totalCount = await JobOrder.countDocuments(query);
@@ -333,28 +318,39 @@ exports.addConsumedMaterials = async (req, res) => {
 
 // Handle view jobOrder info
 exports.get = function (req, res) {
-  const job_order_id = new mongoose.Types.ObjectId(req.params.job_order_id);
-  if (!job_order_id) {
+  const jobOrderId = req.params.job_order_id;
+  if (!mongoose.Types.ObjectId.isValid(jobOrderId)) {
     return res.status(400).send({ message: "Invalid jobOrder id" });
   }
 
-  JobOrder.aggregate(
-    [
-      {
-        $match: {
-          _id: job_order_id,
-        },
+  JobOrder.findById(jobOrderId)
+    .populate("employee")
+    .populate({
+      path: "consumed_materials.consumption_material",
+      populate: {
+        path: "material",
+        model: "StorageMaterial",
       },
-    ].concat(jobOrderProjectionMaterials)
-  )
-    .then((cursor) => {
-      if (!cursor || !cursor.length) {
+    })
+    .lean()
+    .then((jobOrder) => {
+      if (!jobOrder) {
         return res.status(404).send({ message: "JobOrder not found" });
       }
+
+      const response = {
+        ...jobOrder,
+        consumed_materials: jobOrder.consumed_materials.map((item) => ({
+          quantity: item.quantity,
+          consumption_material: item.consumption_material,
+          storage_material: item.consumption_material?.material || null,
+        })),
+      };
+
       return res.json({
         status: "success",
         message: "JobOrder retrieved successfully",
-        results: cursor[0],
+        results: response,
       });
     })
     .catch((error) => {
