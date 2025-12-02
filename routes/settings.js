@@ -5,10 +5,10 @@ const controller = require("../controllers/employeeController");
 
 router.get("/operations/employees", controller.index);
 router.get("/operations/employees/:employee_id", [authJwt.verifyToken], controller.get);
-router.post("/operations/register-employee", controller.register);
-router.put("/operations/update/employees/:employee_id", controller.update);
+router.post("/operations/register-employee", [authJwt.verifyToken], controller.register);
+router.put("/operations/update/employees/:employee_id", [authJwt.verifyToken], controller.update);
 router.delete(
-  "/operations/:employee_id",
+  "/operations/employees/:employee_id",
   [authJwt.verifyToken],
   controller.delete
 );
