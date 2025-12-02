@@ -77,6 +77,7 @@ exports.register = async (req, res) => {
   }
 };
 // Handle index actions
+// Handle index actions – now using populate()
 exports.index = async function (req, res) {
   try {
     const {
@@ -86,15 +87,15 @@ exports.index = async function (req, res) {
       sortOrder = "desc",
       ...filter
     } = req.query;
-    let query = {};
 
+    /* ---------- Build the same query object as before ---------- */
+    let query = {};
     const filterArray = helpers.getFilterArray(filter);
     if (filter) {
       filterArray.forEach((filterItem) => {
         switch (filterItem.name) {
           case "archived":
-            const archived = filterItem.value === "true" ? true : false;
-            query[filterItem.name] = archived;
+            query[filterItem.name] = filterItem.value === "true";
             break;
           case "start_date":
           case "end_date":
@@ -103,7 +104,8 @@ exports.index = async function (req, res) {
               dateFilter["$gte"] = new Date(req.query.start_date);
             if (req.query.end_date)
               dateFilter["$lte"] = new Date(req.query.end_date);
-            query["created_date"] = dateFilter;
+            if (Object.keys(dateFilter).length)
+              query["created_date"] = dateFilter;
             break;
           case "search":
             if (filterItem.value) {
@@ -118,47 +120,34 @@ exports.index = async function (req, res) {
               query["employee"] = new mongoose.Types.ObjectId(filterItem.value);
             }
             break;
-            b;
           case "owner":
-            if (filterItem.value) {
-              query["owner"] = filterItem.value
-                ? filterItem.value
-                : "autoexpresss";
-            }
+            if (filterItem.value)
+              query["owner"] = filterItem.value || "autoexpresss";
             break;
           case "status":
-            if (filterItem.value) {
-              query["status"] = [String(filterItem.value)];
-            }
+            if (filterItem.value) query["status"] = [String(filterItem.value)];
             break;
         }
       });
     }
 
-    let sortOptions = helpers.getSortOptions(query, sortBy, sortOrder);
+    const sortOptions = helpers.getSortOptions(query, sortBy, sortOrder);
 
-    const totalJobOrders = await JobOrder.countDocuments(query);
-    const totalPriceQuery = { ...query };
-
-    if (
-      !(
-        "$gte" in totalPriceQuery.created_date ||
-        "$lte" in totalPriceQuery.created_date
-      )
-    ) {
+    // ---------- 2️⃣ Total price (full year or date range) ----------
+    // Build a match for total price calculation. If the user supplied a date filter we use it;
+    // otherwise we default to the current calendar year.
+    let totalPriceMatch = { ...query };
+    if (!totalPriceMatch.created_date) {
       const now = new Date();
       const currentYear = now.getFullYear();
-      const startOfYear = new Date(currentYear, 0, 1);
-      const startOfNextYear = new Date(currentYear + 1, 0, 1);
-      totalPriceQuery.created_date = {
-        $gte: startOfYear,
-        $lt: startOfNextYear,
+      totalPriceMatch.created_date = {
+        $gte: new Date(currentYear, 0, 1),
+        $lt: new Date(currentYear + 1, 0, 1),
       };
     }
 
-    // Aggregation to calculate total price for all documents matching the filter
-    const totalPriceResult = await JobOrder.aggregate([
-      { $match: totalPriceQuery },
+    const totalPriceAgg = await JobOrder.aggregate([
+      { $match: totalPriceMatch },
       ...jobOrderProjectionMaterials,
       {
         $addFields: {
@@ -168,10 +157,7 @@ exports.index = async function (req, res) {
                 input: "$consumed_materials",
                 as: "material",
                 in: {
-                  $multiply: [
-                    "$$material.quantity",
-                    "$$material.storage_material.price",
-                  ],
+                  $multiply: ["$$material.quantity", "$$material.storage_material.price"],
                 },
               },
             },
@@ -190,30 +176,32 @@ exports.index = async function (req, res) {
       {
         $group: {
           _id: null,
-          total_price: {
-            $sum: { $add: ["$consumedMaterialsTotal", "$consumedColorsTotal"] },
-          },
+          total_price: { $sum: { $add: ["$consumedMaterialsTotal", "$consumedColorsTotal"] } },
         },
       },
     ]);
+    const total_price = totalPriceAgg[0]?.total_price || 0;
 
-    const total_price = totalPriceResult[0]?.total_price || 0;
+    /* ---------- 1️⃣ Total count ---------- */
+    const totalCount = await JobOrder.countDocuments(query);
 
-    // Retrieve paginated results with projection for the requested page
-    const jobOrders = await JobOrder.aggregate([
-      { $match: query },
-      { $sort: sortOptions },
-      { $skip: (page - 1) * limit },
-      { $limit: parseInt(limit) },
-      ...jobOrderProjectionMaterials, // Assuming this projection includes needed fields
-    ]).catch((err) => {
-      return res
-        .status(500)
-        .json({ message: "Internal server error", description: err });
-    });
+    /* ---------- 2️⃣ Fetch paginated job orders with populated refs ---------- */
+    const jobOrders = await JobOrder.find(query)
+      .populate("employee") // employee details
+      .populate({
+        path: "consumed_materials.consumption_material", // consumptionMaterial
+        populate: { path: "material", model: "StorageMaterial" }, // storageMaterial
+      })
+      .sort(sortOptions)
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit))
+      .exec();
 
+    // total_price is already computed via aggregation above
+
+    /* ---------- 4️⃣ Respond ---------- */
     return res.json({
-      count: totalJobOrders,
+      count: totalCount,
       total_price,
       message: "Job orders list retrieved successfully",
       results: jobOrders,
@@ -222,7 +210,7 @@ exports.index = async function (req, res) {
   } catch (err) {
     return res
       .status(500)
-      .json({ message: "Internal server error", description: err });
+      .json({ message: "Internal server error", description: err.message });
   }
 };
 

@@ -41,7 +41,7 @@ var storageMaterialSchema = mongoose.Schema({
 
 // Export Info model
 var StorageMaterial = (module.exports = mongoose.model(
-  "storageMaterial",
+  "StorageMaterial",
   storageMaterialSchema
 ));
 module.exports.get = function (callback, limit) {

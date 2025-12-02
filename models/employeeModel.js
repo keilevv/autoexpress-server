@@ -25,7 +25,7 @@ var employeeSchema = mongoose.Schema({
 });
 
 // Export Info model
-var Employee = (module.exports = mongoose.model("employee", employeeSchema));
+var Employee = (module.exports = mongoose.model("Employee", employeeSchema));
 module.exports.get = function (callback, limit) {
   Employee.find(callback).limit(limit);
 };
