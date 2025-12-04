@@ -166,6 +166,7 @@ exports.update = function (req, res) {
         Object.keys(req.body).forEach((key) => {
           employee[key] = req.body[key];
         });
+        employee.owner = "autoexpress"
 
         // save the employee and check for errors
         employee
