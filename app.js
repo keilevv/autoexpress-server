@@ -18,6 +18,7 @@ const messageRoutes = require("./routes/message");
 const inventoryRoutes = require("./routes/inventory");
 const settingsRoutes = require("./routes/settings");
 const productionRoutes = require("./routes/production");
+const builderbotRoutes = require("./routes/builderbot");
 
 const app = express();
 
@@ -52,7 +53,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/inventory", inventoryRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/production", productionRoutes);
-
+app.use("/api/builderbot", builderbotRoutes);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   const err = new Error("Not Found");
