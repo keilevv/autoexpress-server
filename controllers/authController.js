@@ -38,32 +38,77 @@ exports.register = (req, res) => {
 };
 
 exports.login = (req, res) => {
-  User.findOne({
-    username: req.body.username,
-  }).then((user) => {
+  const user = req.user;
+
+  if (!user) {
+    return res.status(401).send({ message: "Authentication failed" });
+  }
+
+  req.id = user._id;
+
+  var token = jwt.sign({ id: user.id }, config.serverConfig.secret, {
+    expiresIn: 86400, // 24 hours
+  });
+
+  res.status(200).send({
+    id: user._id,
+    username: user.username,
+    email: user.email,
+    roles: user.roles,
+    accessToken: token,
+  });
+};
+
+exports.makeAuth = async (req, res) => {
+  const authHeader = req.headers["authorization"];
+
+  if (!authHeader) {
+    return res.status(401).send({ message: "No token provided" });
+  }
+
+  try {
+    const decoded = jwt.verify(authHeader, config.serverConfig.secret);
+    req.id = decoded.id;
+
+    const userId = req.params.userId || decoded.id;
+
+    if (userId && userId.toString() !== decoded.id.toString()) {
+      return res.status(401).send({ message: "Invalid token for user" });
+    }
+
+    const user = await User.findById(decoded.id);
+
     if (!user) {
       return res.status(404).send({ message: "User Not found." });
     }
-    var passwordIsValid = bcrypt.compareSync(req.body.password, user.password);
-    if (!passwordIsValid) {
-      return res.status(401).send({
-        accessToken: null,
-        message: "Invalid Password!",
-      });
-    }
-    var token = jwt.sign({ id: user.id }, config.serverConfig.secret, {
-      expiresIn: 86400, // 24 hours
+
+    const accessToken = jwt.sign(
+      { id: user.id },
+      config.serverConfig.secret,
+      {
+        expiresIn: 86400, // 24 hours
+      }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user.id, type: "refresh" },
+      config.serverConfig.secret,
+      {
+        expiresIn: 604800, // 7 days
+      }
+    );
+
+    return res.status(200).send({
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        roles: user.roles,
+      },
+      accessToken: accessToken,
+      refreshToken: refreshToken,
     });
-    var authorities = [];
-    // for (let i = 0; i < user.roles.length; i++) {
-    //   authorities.push("ROLE_" + user.roles[i].name.toUpperCase());
-    // }
-    res.status(200).send({
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      roles: user.roles,
-      accessToken: token,
-    });
-  });
+  } catch (err) {
+    return res.status(401).send({ message: "Unauthorized" });
+  }
 };

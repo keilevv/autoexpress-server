@@ -1,6 +1,7 @@
 var express = require("express");
 const { verifyRegister } = require("../middlewares");
 const controller = require("../controllers/authController");
+const passport = require("../config/passport");
 var router = express.Router();
 
 router.post(
@@ -8,6 +9,11 @@ router.post(
   [verifyRegister.checkDuplicateUsernameOrEmail],
   controller.register
 );
-router.post("/login", controller.login);
+router.post(
+  "/login",
+  passport.authenticate("local", { session: false }),
+  controller.login
+);
+router.get("/:userId", controller.makeAuth);
 
 module.exports = router;
