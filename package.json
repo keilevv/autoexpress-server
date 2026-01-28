@@ -6,6 +6,9 @@
     "dev": "node  --watch ./bin/www",
     "start": "node ./bin/www"
   },
+  "engines": {
+    "node": ">=18.x"
+  },
   "dependencies": {
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.4",
