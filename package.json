@@ -30,8 +30,5 @@
     "pug": "^3.0.3",
     "serve-favicon": "~2.5.1",
     "uuid": "^13.0.0"
-  },
-  "overrides": {
-    "fast-xml-parser": "^4.4.0"
   }
 }

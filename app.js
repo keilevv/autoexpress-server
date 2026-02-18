@@ -37,7 +37,21 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(passport.initialize());
 
 // cors
-app.use(cors({ origin: true, credentials: true }));
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // In production, you might want to restrict this to specific domains
+    // For now, mirroring origin (true) is what you had, but we'll make it explicit
+    // You can add more logic here to check against an allowlist
+    callback(null, true);
+  },
+  credentials: true,
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+};
+
+app.use(cors(corsOptions));
 
 // Connect to Mongoose and set connection variable
 mongoose
