@@ -1,6 +1,6 @@
 User = require("../models/userModel");
 const { R2Service } = require("../utils/r2Service");
-const { v4: uuidv4 } = require("uuid");
+const crypto = require("crypto");
 
 exports.index = function (req, res) {
   User.find({}).then((users) => {
@@ -87,7 +87,7 @@ exports.update = async function (req, res) {
         if (key === "signature") {
           const imageKey = R2Service.generateImageKey(
             user.username + "_signature",
-            uuidv4().replace(/-/g, "").substring(0, 8),
+            crypto.randomUUID().replace(/-/g, "").substring(0, 8),
             ".png",
           );
           const result = await R2Service.uploadBase64(
