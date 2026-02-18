@@ -1,10 +1,24 @@
 // userModel.js
 var mongoose = require("mongoose");
 // Setup schema
+
+const R2_BASE_URL = process.env.R2_BASE_URL;
 var inventoryRequestSchema = mongoose.Schema({
     archived: {
         type: Boolean,
         default: false,
+    },
+    signature: {
+        type: String,
+        required: true,
+        validate: {
+            validator: (v) => {
+                return (
+                    /^data:image\/png;base64,.*$/.test(v) || v.startsWith(R2_BASE_URL)
+                );
+            },
+            message: "La firma debe ser una imagen en base64",
+        },
     },
     materials: [
         {
