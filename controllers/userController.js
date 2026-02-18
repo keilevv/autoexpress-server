@@ -1,4 +1,6 @@
 User = require("../models/userModel");
+const { R2Service } = require("../utils/r2Service");
+const { v4: uuidv4 } = require("uuid");
 
 exports.index = function (req, res) {
   User.find({}).then((users) => {
@@ -10,6 +12,7 @@ exports.index = function (req, res) {
           email: 1,
           roles: 1,
           created_date: 1,
+          signature: 1,
         },
       },
     ]).then((cursor) => {
@@ -74,23 +77,47 @@ exports.getByName = function (req, res) {
     });
 };
 // Handle update user user
-exports.update = function (req, res) {
+exports.update = async function (req, res) {
   User.findById(req.params.user_id)
-    .then((user) => {
+    .then(async (user) => {
       if (!user) res.status(404).send({ message: "User not found" });
 
-      // Iterate over the keys in the request body and update corresponding fields
-      Object.keys(req.body).forEach((key) => {
-        user[key] = req.body[key];
+      // Process updates asynchronously
+      const updateTasks = Object.keys(req.body).map(async (key) => {
+        if (key === "signature") {
+          const imageKey = R2Service.generateImageKey(
+            user.username + "_signature",
+            uuidv4().replace(/-/g, "").substring(0, 8),
+            ".png",
+          );
+          const result = await R2Service.uploadBase64(
+            req.body[key],
+            imageKey,
+            "image/png",
+          );
+          if (result.success) {
+            user.signature = result.url;
+          } else {
+            console.error("Signature upload failed:", result.error);
+          }
+        } else {
+          user[key] = req.body[key];
+        }
       });
+
+      await Promise.all(updateTasks);
 
       // save the user and check for errors
       user
         .save()
         .then((updatedUser) => {
+          const user = updatedUser;
+          user.id = updatedUser._id;
+          delete user._id;
+          delete user.password;
           res.json({
             message: "User updated",
-            results: updatedUser,
+            results: user,
           });
         })
         .catch((err) => {

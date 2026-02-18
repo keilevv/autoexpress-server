@@ -271,4 +271,4 @@ exports.deleteAll = function (req, res) {
 };
 
 // Controller to upload and process the CSV file
-exports.uploadStorageMaterials = (req, res) => {};
+exports.uploadStorageMaterials = (req, res) => { };
