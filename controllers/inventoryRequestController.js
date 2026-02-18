@@ -1,0 +1,326 @@
+// storageMaterialController.js
+// Import Models
+const { helpers } = require("../utils/helpers");
+const mongoose = require("mongoose");
+const User = require("../models/userModel");
+const ConsumptionMaterial = require("../models/consumptionMaterialModel");
+const StorageMaterial = require("../models/storageMaterialModel");
+const aggregations = require("./aggregations");
+const InventoryRequest = require("../models/inventoryRequest");
+
+exports.createRequest = async (req, res) => {
+    try {
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).send({ message: "Usuario no encontrado" });
+        }
+
+        if (!req.body.materials || !req.body.signature)
+            return res.status(400).send({ message: "Datos incompletos" });
+
+        const materials = req.body.materials.map((m) => ({
+            material: m.material_id || m.material,
+            quantity: m.quantity,
+        }));
+        if (!materials || materials.length === 0)
+            return res
+                .status(400)
+                .send({ message: "Ningun material válido asignado" });
+
+        const inventoryRequest = new InventoryRequest({
+            materials,
+            user: req.userId,
+            owner: req.body.owner,
+            approved: false,
+            signature: req.body.signature,
+        });
+
+        await inventoryRequest.save();
+
+        await inventoryRequest.populate([
+            { path: "user", select: "-password" },
+            { path: "materials.material" },
+        ]);
+
+        return res.status(201).send({
+            message: "Solicitud de inventario creada exitosamente",
+            results: inventoryRequest,
+        });
+    } catch (err) {
+        return res
+            .status(500)
+            .send({ message: "Internal server error", description: err.message });
+    }
+};
+
+exports.indexInventoryRequests = async function (req, res) {
+    const { page = 1, limit = 10, sortBy, sortOrder, ...filter } = req.query;
+
+    let query = {};
+    const filterArray = helpers.getFilterArray(filter);
+
+    // Apply filtering if any
+    if (filter) {
+        filterArray.forEach((filterItem) => {
+            switch (filterItem.name) {
+                case "archived":
+                    query[filterItem.name] = filterItem.value === "true";
+                    break;
+                case "start_date":
+                case "end_date":
+                    const dateFilter = query["created_date"] || {};
+                    if (filterItem.name === "start_date")
+                        dateFilter["$gte"] = new Date(filterItem.value);
+                    if (filterItem.name === "end_date")
+                        dateFilter["$lte"] = new Date(filterItem.value);
+                    query["created_date"] = dateFilter;
+                    break;
+                case "user":
+                    query["user"] = filterItem.value;
+                    break;
+                case "approved":
+                    query["approved"] = filterItem.value === "true";
+                    break;
+                default:
+                    query[filterItem.name] = {
+                        $regex: filterItem.value,
+                        $options: "i",
+                    };
+                    break;
+            }
+        });
+    }
+
+    // Apply sorting if any
+    let sortOptions = {};
+    if (sortBy && sortOrder) {
+        sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+    } else {
+        sortOptions["created_date"] = -1;
+    }
+
+    try {
+        const actingUser = await User.findById(req.userId);
+        if (!actingUser) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        // Role-based filtering: Admin sees all, others only see their own
+        if (!actingUser.roles.includes("admin")) {
+            query["user"] = req.userId;
+        }
+
+        const count = await InventoryRequest.countDocuments(query);
+        const results = await InventoryRequest.find(query)
+            .sort(sortOptions)
+            .skip((page - 1) * limit)
+            .limit(parseInt(limit))
+            .populate({ path: "user", select: "-password" })
+            .populate("materials.material");
+
+        return res.json({
+            status: "success",
+            message: "Inventory requests retrieved successfully",
+            count,
+            results,
+        });
+    } catch (err) {
+        return res
+            .status(500)
+            .json({ message: "Internal server error", description: err.message });
+    }
+};
+
+exports.approveRequest = async (req, res) => {
+    try {
+        const materials = req.body.materials;
+        if (!materials || materials.length === 0)
+            return res
+                .status(400)
+                .send({ message: "Ningun material válido asignado" });
+
+        for (const material of materials) {
+            const storageMaterial = await StorageMaterial.findById(
+                material.material_id,
+            );
+            if (!storageMaterial) {
+                return res.status(404).send({ message: "Material no encontrado" });
+            }
+
+            const existingConsumptionMaterial = await ConsumptionMaterial.findOne({
+                material: material.material_id,
+            });
+
+            if (
+                existingConsumptionMaterial &&
+                !existingConsumptionMaterial.archived
+            ) {
+                if (material.quantity > storageMaterial.quantity) {
+                    return res
+                        .status(400)
+                        .send({ message: "No hay suficientes materiales" });
+                }
+
+                existingConsumptionMaterial.quantity += material.quantity;
+                storageMaterial.quantity -= material.quantity;
+
+                await existingConsumptionMaterial.save();
+                await storageMaterial.save();
+
+                return res
+                    .status(201)
+                    .send({ message: "Materiales de consumo agregados exitosamente" });
+            } else {
+                if (material.quantity > storageMaterial.quantity) {
+                    return res
+                        .status(400)
+                        .send({ message: "No hay suficientes materiales" });
+                }
+
+                storageMaterial.quantity -= material.quantity;
+                await storageMaterial.save();
+
+                const consumptionMaterial = new ConsumptionMaterial({
+                    material: material.material_id,
+                    quantity: material.quantity,
+                    caution_quantity: material.caution_quantity,
+                });
+
+                await consumptionMaterial.save();
+                res
+                    .status(201)
+                    .send({ message: "Materiales de consumo creados exitosamente" });
+            }
+        }
+    } catch (err) {
+        res
+            .status(500)
+            .send({ message: "Internal server error", description: err });
+    }
+};
+
+exports.get = function (req, res) {
+    const materialId = new mongoose.Types.ObjectId(req.params.material_id);
+    if (!materialId) {
+        return res.status(400).send({ message: "Invalid material id" });
+    }
+
+    ConsumptionMaterial.aggregate(
+        [
+            {
+                $match: {
+                    _id: materialId,
+                },
+            },
+        ].concat(aggregations.consumptionMaterialProjection),
+    )
+        .then((cursor) => {
+            if (!cursor || !cursor.length) {
+                return res.status(404).send({ message: "Material not found" });
+            }
+            return res.json({
+                status: "success",
+                message: "Material retrieved successfully",
+                results: cursor[0],
+            });
+        })
+        .catch((error) => {
+            return res
+                .status(500)
+                .send({ message: "Internal server error", description: error });
+        });
+};
+
+// Handle update material from id
+exports.update = async function (req, res) {
+    try {
+        const material = await ConsumptionMaterial.findById(req.params.material_id);
+        if (!material) {
+            return res.status(404).send({ message: "Material not found" });
+        }
+        Object.keys(req.body).forEach(async (key) => {
+            if (key === "material" || key === "quantity") {
+                const newQuantity = req.body.quantity;
+                const oldQuantity = material.quantity;
+                const difference = newQuantity - oldQuantity;
+
+                const storageMaterial = await StorageMaterial.findById(
+                    material.material,
+                );
+                if (!storageMaterial) {
+                    return res
+                        .status(404)
+                        .send({ message: "Material de almacenamiento no encontrado" });
+                }
+                // Check if there is enough storage material for the difference
+                if (difference > 0 && difference > storageMaterial.quantity) {
+                    return res
+                        .status(400)
+                        .send({ message: "No hay suficientes materiales para actualizar" });
+                }
+
+                // Update the storage material quantity
+                storageMaterial.quantity -= difference;
+                await storageMaterial.save();
+
+                // Update the consumption material
+                material.quantity = newQuantity;
+                await material.save();
+                material.material = storageMaterial;
+
+                res.json({
+                    message: "Material de consumo actualizado exitosamente",
+                    results: material,
+                });
+            }
+
+            if (key === "archived") {
+                material.archived = req.body.archived;
+                await material.save();
+                res.json({
+                    message: "Material de consumo actualizado exitosamente",
+                    results: material,
+                });
+            }
+        });
+    } catch (err) {
+        res
+            .status(500)
+            .send({ message: "Internal server error", description: err.message });
+    }
+};
+// Handle delete material
+exports.delete = function (req, res) {
+    ConsumptionMaterial.deleteOne({
+        _id: req.params.material_id,
+    })
+        .then((material) => {
+            if (material) {
+                return res.json({
+                    status: "success",
+                    message: "ConsumptionMaterial deleted successfully!",
+                });
+            }
+            return res
+                .status(400)
+                .send({ message: "ConsumptionMaterial not found!" });
+        })
+        .catch((err) => {
+            if (err) res.status(500).send({ message: err });
+        });
+};
+
+/* WARNING: This will delete all appointments, use only on dev environment */
+exports.deleteAll = function (req, res) {
+    ConsumptionMaterial.deleteMany({})
+        .then(() => {
+            res.json({
+                status: "success",
+                message:
+                    "All materials deleted, prepare yourself, I'm going to kill you.",
+            });
+        })
+        .catch((err) => {
+            if (err) res.status(500).send({ message: err });
+        });
+};
