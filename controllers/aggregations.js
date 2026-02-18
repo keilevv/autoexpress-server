@@ -65,6 +65,7 @@ exports.userProjection = [
       email: 1,
       roles: 1,
       archived: 1,
+      signature: 1,
     },
   },
 ];

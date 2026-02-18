@@ -50,12 +50,22 @@ exports.login = (req, res) => {
     expiresIn: 86400, // 24 hours
   });
 
+  var refreshToken = jwt.sign(
+    { id: user.id, type: "refresh" },
+    config.serverConfig.secret,
+    {
+      expiresIn: 604800, // 7 days
+    },
+  );
+
   res.status(200).send({
     id: user._id,
     username: user.username,
     email: user.email,
     roles: user.roles,
     accessToken: token,
+    refreshToken: refreshToken,
+    signature: user.signature,
   });
 };
 
@@ -82,20 +92,16 @@ exports.makeAuth = async (req, res) => {
       return res.status(404).send({ message: "User Not found." });
     }
 
-    const accessToken = jwt.sign(
-      { id: user.id },
-      config.serverConfig.secret,
-      {
-        expiresIn: 86400, // 24 hours
-      }
-    );
+    const accessToken = jwt.sign({ id: user.id }, config.serverConfig.secret, {
+      expiresIn: 86400, // 24 hours
+    });
 
     const refreshToken = jwt.sign(
       { id: user.id, type: "refresh" },
       config.serverConfig.secret,
       {
-        expiresIn: 604800, // 7 days
-      }
+        expiresIn: 30000, // 7 days
+      },
     );
 
     return res.status(200).send({
@@ -104,6 +110,7 @@ exports.makeAuth = async (req, res) => {
         username: user.username,
         email: user.email,
         roles: user.roles,
+        signature: user.signature,
       },
       accessToken: accessToken,
       refreshToken: refreshToken,

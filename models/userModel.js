@@ -26,6 +26,9 @@ var userSchema = mongoose.Schema({
     required: true,
     default: "user",
   },
+  signature: {
+    type: String,
+  },
   birthday: {
     type: Date,
   },
