@@ -9,7 +9,6 @@ const mg = mailgun.client({
     "7063c11b170aad2042e49e6cac2b1394-4c205c86-40ca77a9",
 });
 
-console.log("key", process.env.MAILGUN_API_KEY);
 
 // Create a transporter object using SMTP transport
 
