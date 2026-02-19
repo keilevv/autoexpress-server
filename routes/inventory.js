@@ -102,10 +102,22 @@ router.get(
   inventoryRequestController.indexInventoryRequests,
 );
 
-// router.put(
-//   "/operations/update/inventory-request/:request_id",
-//   [authJwt.verifyToken],
-//   inventoryRequestController.updateInventoryRequest,
-// );
+router.put(
+  "/operations/inventory-request/:request_id/approve",
+  [authJwt.verifyToken],
+  inventoryRequestController.approveRequest,
+);
+
+router.put(
+  "/operations/inventory-request/:request_id/reject",
+  [authJwt.verifyToken],
+  inventoryRequestController.rejectRequest,
+);
+
+router.put(
+  "/operations/inventory-request/:request_id/update",
+  [authJwt.verifyToken],
+  inventoryRequestController.update,
+);
 
 module.exports = router;

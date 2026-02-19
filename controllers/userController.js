@@ -98,7 +98,7 @@ exports.update = async function (req, res) {
           if (result.success) {
             user.signature = result.url;
           } else {
-            console.error("Signature upload failed:", result.error);
+            return res.status(500).send({ message: "Error subiendo firma" });
           }
         } else {
           user[key] = req.body[key];

@@ -18,10 +18,17 @@ exports.createRequest = async (req, res) => {
         if (!req.body.materials || !req.body.signature)
             return res.status(400).send({ message: "Datos incompletos" });
 
-        const materials = req.body.materials.map((m) => ({
-            material: m.material_id || m.material,
-            quantity: m.quantity,
-        }));
+        const materials = req.body.materials.map((m) => {
+            const material = StorageMaterial.findById(m.material_id);
+            if (!material) {
+                return res.status(404).send({ message: "Material no encontrado" });
+            }
+
+            return {
+                material: m.material_id || m.material,
+                quantity: m.quantity,
+            };
+        });
         if (!materials || materials.length === 0)
             return res
                 .status(400)
@@ -58,13 +65,16 @@ exports.indexInventoryRequests = async function (req, res) {
 
     let query = {};
     const filterArray = helpers.getFilterArray(filter);
+    query.archived = false;
 
     // Apply filtering if any
     if (filter) {
-        filterArray.forEach((filterItem) => {
+        filterArray.forEach(async (filterItem) => {
             switch (filterItem.name) {
                 case "archived":
-                    query[filterItem.name] = filterItem.value === "true";
+                    const actingUser = await User.findById(req.userId);
+                    if (actingUser?.roles.includes("admin"))
+                        query[filterItem.name] = filterItem.value === "true";
                     break;
                 case "start_date":
                 case "end_date":
@@ -133,7 +143,12 @@ exports.indexInventoryRequests = async function (req, res) {
 
 exports.approveRequest = async (req, res) => {
     try {
-        const materials = req.body.materials;
+        const inventoryRequest = await InventoryRequest.findById(req.params.id);
+        if (!inventoryRequest) {
+            return res.status(404).send({ message: "Solicitud no encontrada" });
+        }
+
+        const materials = inventoryRequest.materials;
         if (!materials || materials.length === 0)
             return res
                 .status(400)
@@ -187,9 +202,9 @@ exports.approveRequest = async (req, res) => {
                 });
 
                 await consumptionMaterial.save();
-                res
-                    .status(201)
-                    .send({ message: "Materiales de consumo creados exitosamente" });
+                inventoryRequest.approved = true;
+                await inventoryRequest.save();
+                res.status(201).send({ message: "Solicitud aprobada exitosamente" });
             }
         }
     } catch (err) {
@@ -199,7 +214,24 @@ exports.approveRequest = async (req, res) => {
     }
 };
 
-exports.get = function (req, res) {
+exports.rejectRequest = async (req, res) => {
+    try {
+        const inventoryRequest = await InventoryRequest.findById(req.params.id);
+        if (!inventoryRequest) {
+            return res.status(404).send({ message: "Solicitud no encontrada" });
+        }
+
+        inventoryRequest.approved = false;
+        await inventoryRequest.save();
+        res.status(201).send({ message: "Solicitud rechazada exitosamente" });
+    } catch (err) {
+        res
+            .status(500)
+            .send({ message: "Internal server error", description: err });
+    }
+};
+
+exports.get = async function (req, res) {
     const materialId = new mongoose.Types.ObjectId(req.params.material_id);
     if (!materialId) {
         return res.status(400).send({ message: "Invalid material id" });
@@ -234,57 +266,86 @@ exports.get = function (req, res) {
 // Handle update material from id
 exports.update = async function (req, res) {
     try {
-        const material = await ConsumptionMaterial.findById(req.params.material_id);
-        if (!material) {
-            return res.status(404).send({ message: "Material not found" });
+        const userId = req.userId;
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).send({ message: "Usuario no encontrado" });
         }
-        Object.keys(req.body).forEach(async (key) => {
-            if (key === "material" || key === "quantity") {
-                const newQuantity = req.body.quantity;
-                const oldQuantity = material.quantity;
-                const difference = newQuantity - oldQuantity;
 
-                const storageMaterial = await StorageMaterial.findById(
-                    material.material,
-                );
+        const inventoryRequest = await InventoryRequest.findById(
+            req.params.request_id,
+        );
+        if (!inventoryRequest) {
+            return res.status(404).send({ message: "Solicitud no encontrada" });
+        }
+
+        // Ownership check: Admin or the user who created it
+        if (!user.roles.includes("admin")) {
+            const requesterId = inventoryRequest.user._id
+                ? inventoryRequest.user._id.toString()
+                : inventoryRequest.user.toString();
+
+            if (requesterId !== userId) {
+                return res.status(403).send({
+                    message: "No tienes permiso para actualizar esta solicitud",
+                });
+            }
+        }
+
+        const allowedKeys = ["archived", "materials"];
+        const keys = Object.keys(req.body);
+
+        // Check if I send any other fields other than archived and materials
+        for (const key of keys) {
+            if (!allowedKeys.includes(key)) {
+                return res.status(400).send({ message: "Key no valida" });
+            }
+        }
+
+        if (keys.includes("archived")) {
+            inventoryRequest.archived = req.body.archived;
+        }
+
+        if (keys.includes("materials")) {
+            const newMaterials = req.body.materials;
+            if (!Array.isArray(newMaterials)) {
+                return res
+                    .status(400)
+                    .send({ message: "Materials debe ser un arreglo" });
+            }
+
+            // Validate all materials before applying any changes
+            for (const material of newMaterials) {
+                const materialId = material.material_id || material.material;
+                if (!materialId) {
+                    return res.status(400).send({ message: "ID de material faltante" });
+                }
+
+                const storageMaterial = await StorageMaterial.findById(materialId);
                 if (!storageMaterial) {
-                    return res
-                        .status(404)
-                        .send({ message: "Material de almacenamiento no encontrado" });
-                }
-                // Check if there is enough storage material for the difference
-                if (difference > 0 && difference > storageMaterial.quantity) {
-                    return res
-                        .status(400)
-                        .send({ message: "No hay suficientes materiales para actualizar" });
+                    return res.status(404).send({ message: "Material no encontrado" });
                 }
 
-                // Update the storage material quantity
-                storageMaterial.quantity -= difference;
-                await storageMaterial.save();
-
-                // Update the consumption material
-                material.quantity = newQuantity;
-                await material.save();
-                material.material = storageMaterial;
-
-                res.json({
-                    message: "Material de consumo actualizado exitosamente",
-                    results: material,
-                });
+                if (!material.quantity || material.quantity <= 0) {
+                    return res.status(400).send({ message: "Cantidad no valida" });
+                }
             }
 
-            if (key === "archived") {
-                material.archived = req.body.archived;
-                await material.save();
-                res.json({
-                    message: "Material de consumo actualizado exitosamente",
-                    results: material,
-                });
-            }
+            inventoryRequest.materials = newMaterials.map((m) => ({
+                material: m.material_id || m.material,
+                quantity: m.quantity,
+            }));
+            inventoryRequest.markModified("materials");
+        }
+
+        await inventoryRequest.save();
+
+        return res.status(200).send({
+            message: "Solicitud actualizada exitosamente",
+            results: inventoryRequest,
         });
     } catch (err) {
-        res
+        return res
             .status(500)
             .send({ message: "Internal server error", description: err.message });
     }
