@@ -148,6 +148,8 @@ exports.consumptionMaterialProjection = [
       "material.reference": 1,
       "material.unit": 1,
       "material.price": 1,
+      "material.is_color": 1,
+      "material.normalized_weight": 1,
     },
   },
 ];

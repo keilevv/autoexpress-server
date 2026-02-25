@@ -28,7 +28,7 @@ var jobOrderSchema = mongoose.Schema({
   car_brand: {
     type: String,
   },
-  car_model:{
+  car_model: {
     type: String,
   },
   status: [
@@ -54,6 +54,10 @@ var jobOrderSchema = mongoose.Schema({
   ],
   consumed_colors: [
     {
+      consumption_material: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "consumptionMaterial", // Reference to consumptionMaterial
+      },
       name: { type: String, required: true },
       quantity: { type: Number, required: true },
       price: { type: Number },

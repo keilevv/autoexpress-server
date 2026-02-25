@@ -17,7 +17,7 @@ exports.register = async (req, res) => {
 
     for (const material of materials) {
       const storageMaterial = await StorageMaterial.findById(
-        material.material_id
+        material.material_id,
       );
       if (!storageMaterial) {
         return res.status(404).send({ message: "Material no encontrado" });
@@ -85,7 +85,7 @@ exports.index = async function (req, res) {
 
   // Apply filtering if any
   if (filter) {
-    filterArray.forEach((filterItem) => {
+    for (const filterItem of filterArray) {
       switch (filterItem.name) {
         case "archived":
           const archived = filterItem.value === "true" ? true : false;
@@ -115,6 +115,14 @@ exports.index = async function (req, res) {
             $options: "i",
           };
           break;
+
+        case "is_color":
+          if (filterItem.value === "true") {
+            materialNameFilter["material.is_color"] = true;
+          } else {
+            materialNameFilter["material.is_color"] = { $ne: true };
+          }
+          break;
         default:
           query[filterItem.name] = {
             $regex: filterItem.value,
@@ -122,7 +130,7 @@ exports.index = async function (req, res) {
           };
           break;
       }
-    });
+    }
   }
 
   // Apply sorting if any
@@ -151,8 +159,8 @@ exports.index = async function (req, res) {
       { $match: materialNameFilter },
       {
         $addFields: {
-          isZeroQuantity: { $cond: [{ $lte: ["$quantity", 0] }, 1, 0] }
-        }
+          isZeroQuantity: { $cond: [{ $lte: ["$quantity", 0] }, 1, 0] },
+        },
       },
       {
         $facet: {
@@ -209,7 +217,7 @@ exports.get = function (req, res) {
           _id: materialId,
         },
       },
-    ].concat(aggregations.consumptionMaterialProjection)
+    ].concat(aggregations.consumptionMaterialProjection),
   )
     .then((cursor) => {
       if (!cursor || !cursor.length) {
@@ -242,7 +250,7 @@ exports.update = async function (req, res) {
         const difference = newQuantity - oldQuantity;
 
         const storageMaterial = await StorageMaterial.findById(
-          material.material
+          material.material,
         );
         if (!storageMaterial) {
           return res

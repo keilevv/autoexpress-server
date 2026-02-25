@@ -38,15 +38,14 @@ exports.register = async (req, res) => {
         const updatedMaterial = await ConsumptionMaterial.findByIdAndUpdate(
           material,
           { $inc: { quantity: -quantity } },
-          { new: true, session }
+          { new: true, session },
         );
 
         // Check if quantity goes negative
         if (!updatedMaterial || updatedMaterial.quantity < 0) {
           throw new Error(
-            `Insufficient stock for material ID: ${material} (remaining quantity: ${
-              updatedMaterial ? updatedMaterial.quantity : 0
-            })`
+            `Insufficient stock for material ID: ${material} (remaining quantity: ${updatedMaterial ? updatedMaterial.quantity : 0
+            })`,
           );
         }
       }
@@ -156,12 +155,12 @@ exports.index = async function (req, res) {
           const price = item.consumption_material?.material?.price || 0;
           return sum + (item.quantity || 0) * price;
         },
-        0
+        0,
       );
 
       const colorsTotal = (order.consumed_colors || []).reduce(
         (sum, color) => sum + (color.price || 0),
-        0
+        0,
       );
 
       return acc + materialsTotal + colorsTotal;
@@ -210,28 +209,23 @@ exports.addConsumedMaterials = async (req, res) => {
       return res.status(404).send({ message: "JobOrder not found" });
     }
 
-    // If consumed_colors is provided, update it
-    if (typeof consumed_colors === "object") {
-      jobOrder.consumed_colors = consumed_colors;
-    }
-
     // Get the current consumed materials in the job order
     const previousConsumedMaterials = [...jobOrder.consumed_materials];
 
     // Create a set of the new consumed material IDs for easier comparison
     const consumedMaterialSet = new Set(
-      consumed_materials.map((item) => item.consumption_material.toString())
+      consumed_materials.map((item) => item.consumption_material.toString()),
     );
 
     // Filter out materials that are no longer in the consumed_materials list
     const removedMaterials = previousConsumedMaterials.filter(
-      (item) => !consumedMaterialSet.has(item.consumption_material.toString())
+      (item) => !consumedMaterialSet.has(item.consumption_material.toString()),
     );
 
     // Add the quantity of removed materials back to the corresponding ConsumptionMaterial stock
     for (let removedItem of removedMaterials) {
       const consumptionMaterial = await ConsumptionMaterial.findById(
-        removedItem.consumption_material
+        removedItem.consumption_material,
       );
       if (consumptionMaterial) {
         consumptionMaterial.quantity += removedItem.quantity;
@@ -241,13 +235,13 @@ exports.addConsumedMaterials = async (req, res) => {
 
     // Update the jobOrder's consumed_materials list by removing items not in the new list
     jobOrder.consumed_materials = jobOrder.consumed_materials.filter((item) =>
-      consumedMaterialSet.has(item.consumption_material.toString())
+      consumedMaterialSet.has(item.consumption_material.toString()),
     );
 
     // Process the new consumed materials
     for (let materialItem of consumed_materials) {
       const consumptionMaterial = await ConsumptionMaterial.findById(
-        materialItem.consumption_material
+        materialItem.consumption_material,
       );
       if (!consumptionMaterial) {
         return res.status(404).send({
@@ -259,7 +253,7 @@ exports.addConsumedMaterials = async (req, res) => {
       const existingMaterial = jobOrder.consumed_materials.find(
         (item) =>
           item.consumption_material.toString() ===
-          materialItem.consumption_material
+          materialItem.consumption_material,
       );
       let quantityDifference = 0;
 
@@ -283,8 +277,15 @@ exports.addConsumedMaterials = async (req, res) => {
         // Update the quantity in the consumed_materials array
         existingMaterial.quantity = materialItem.quantity;
       } else {
-        // If it's a new material, just add it to the consumed_materials array
+        const storageMaterial = await StorageMaterial.findById(
+          consumptionMaterial.material,
+        );
+        if (storageMaterial.is_color && storageMaterial.unit === "litro") {
+          materialItem.quantity =
+            materialItem.quantity / storageMaterial.normalized_weight;
+        }
         if (consumptionMaterial.quantity < materialItem.quantity) {
+          // If it's a new material, just add it to the consumed_materials array
           return res.status(400).send({
             message: `Not enough quantity for material ID ${materialItem.consumption_material}`,
           });
@@ -301,6 +302,103 @@ exports.addConsumedMaterials = async (req, res) => {
       await consumptionMaterial.save();
     }
 
+    const previousConsumedColors = [...jobOrder.consumed_colors];
+    const consumedColorsSet = new Set(
+      consumed_colors.map((item) => {
+        if (item.consumption_material) {
+          return item.consumption_material;
+        }
+        return item.name;
+      }),
+    );
+
+    const removedColors = previousConsumedColors.filter(
+      (item) => !consumedColorsSet.has(item.consumption_material),
+    );
+    for (let removedItem of removedColors) {
+      const consumptionMaterial = await ConsumptionMaterial.findById(
+        removedItem.consumption_material,
+      );
+      if (consumptionMaterial) {
+        consumptionMaterial.quantity += removedItem.quantity;
+        await consumptionMaterial.save();
+      }
+    }
+    jobOrder.consumed_colors = jobOrder.consumed_colors.filter((item) =>
+      consumedColorsSet.has(item.consumption_material),
+    );
+
+    for (let colorItem of consumed_colors) {
+      if (colorItem.consumption_material) {
+        const consumptionMaterial = await ConsumptionMaterial.findById(
+          colorItem.consumption_material,
+        );
+
+        if (!consumptionMaterial) {
+          return res.status(404).send({
+            message: `Material with ID ${colorItem.consumption_material} not found`,
+          });
+        }
+        const existingColor = jobOrder.consumed_colors.find(
+          (item) =>
+            item.consumption_material === colorItem.consumption_material,
+        );
+        let quantityDifference = 0;
+
+        if (existingColor) {
+          quantityDifference = colorItem.quantity - existingColor.quantity;
+
+          if (quantityDifference > 0) {
+            if (consumptionMaterial.quantity < quantityDifference) {
+              return res.status(400).send({
+                message: `Not enough quantity for material ID ${colorItem.consumption_material}`,
+              });
+            }
+            consumptionMaterial.quantity -= quantityDifference;
+          } else if (quantityDifference < 0) {
+            // Add the difference back to the consumptionMaterial stock
+            consumptionMaterial.quantity += Math.abs(quantityDifference);
+          }
+
+          // Update the quantity in the consumed_materials array
+          existingColor.quantity = colorItem.quantity;
+        } else {
+          const storageMaterial = await StorageMaterial.findById(
+            consumptionMaterial.material,
+          );
+          if (storageMaterial.is_color && storageMaterial.unit === "litro") {
+            colorItem.quantity =
+              colorItem.quantity / storageMaterial.normalized_weight;
+          }
+          if (consumptionMaterial.quantity < colorItem.quantity) {
+            // If it's a new material, just add it to the consumed_materials array
+            return res.status(400).send({
+              message: `Not enough quantity for material ID ${colorItem.consumption_material}`,
+            });
+          }
+
+          consumptionMaterial.quantity -= colorItem.quantity;
+          jobOrder.consumed_colors.push({
+            name: colorItem.name,
+            price: colorItem.price,
+            consumption_material: colorItem.consumption_material,
+            quantity: colorItem.quantity,
+          });
+        }
+
+        // Save the updated consumption material
+        await consumptionMaterial.save();
+      } else {
+        jobOrder.consumed_colors.push({
+          name: colorItem.name,
+          price: colorItem.price,
+          quantity: colorItem.quantity,
+          consumption_material: colorItem.consumption_material
+            ? colorItem.consumption_material
+            : null,
+        });
+      }
+    }
     // Save the updated job order
     await jobOrder.save();
 
@@ -369,6 +467,11 @@ exports.update = function (req, res) {
 
         // Iterate over the keys in the request body and update corresponding fields
         Object.keys(req.body).forEach((key) => {
+          if (key === "consumed_colors" || key === "consumed_materials") {
+            return res.status(400).send({
+              message: `Cannot update ${key} directly. Use the specific endpoint.`,
+            });
+          }
           jobOrder[key] = req.body[key];
         });
 
