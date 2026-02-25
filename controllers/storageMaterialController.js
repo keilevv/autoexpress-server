@@ -110,13 +110,19 @@ exports.index = async function (req, res) {
   if (sortBy && sortOrder) {
     sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
   } else {
-    sortOptions["date"] = 1;
+    sortOptions["isZeroQuantity"] = 1;
+    sortOptions["created_date"] = -1;
   }
   sortOptions["_id"] = 1;
 
   try {
     const materials = await StorageMaterial.aggregate([
       { $match: query }, // Match the base query first
+      {
+        $addFields: {
+          isZeroQuantity: { $cond: [{ $lte: ["$quantity", 0] }, 1, 0] },
+        },
+      },
       {
         $facet: {
           paginatedResults: [
@@ -205,9 +211,31 @@ exports.update = function (req, res) {
           return res.status(404).send({ message: "material not found" });
 
         // Iterate over the keys in the request body and update corresponding fields
-        Object.keys(req.body).forEach((key) => {
-          material[key] = req.body[key];
-        });
+        for (const key of Object.keys(req.body)) {
+          switch (key) {
+            case "normalized_weight":
+              const normalized_weight = Number(req.body[key]);
+              if (!material.is_color) {
+                return res.status(400).send({
+                  message:
+                    "No se puede actualizar el peso normalizado de un material que no es color",
+                });
+              }
+              if (normalized_weight <= 0) {
+                return res
+                  .status(400)
+                  .send({ message: "Peso normalizado inválido" });
+              }
+              material[key] = normalized_weight;
+              break;
+            case "is_color":
+              material[key] = req.body[key];
+              break;
+            default:
+              material[key] = req.body[key];
+              break;
+          }
+        }
 
         // save the material and check for errors
         material

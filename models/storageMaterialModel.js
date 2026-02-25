@@ -17,6 +17,11 @@ var storageMaterialSchema = mongoose.Schema({
   unit: {
     type: String,
     required: true,
+    enum: ["kg", "litro", "unit", "galon"],
+  },
+  // this is the weight of the material of 1kg or 1 liter or 1 unit or 1 galon
+  normalized_weight: {
+    type: Number,
   },
   quantity: {
     type: Number,
@@ -33,6 +38,10 @@ var storageMaterialSchema = mongoose.Schema({
     default: "autoexpress",
     required: true,
   },
+  is_color: {
+    type: Boolean,
+    default: false,
+  },
   created_date: {
     type: Date,
     default: Date.now,
@@ -42,7 +51,7 @@ var storageMaterialSchema = mongoose.Schema({
 // Export Info model
 var StorageMaterial = (module.exports = mongoose.model(
   "StorageMaterial",
-  storageMaterialSchema
+  storageMaterialSchema,
 ));
 module.exports.get = function (callback, limit) {
   StorageMaterial.find(callback).limit(limit);

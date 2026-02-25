@@ -39,14 +39,25 @@ var inventoryRequestSchema = mongoose.Schema({
         ref: "user",
         required: true,
     },
+    approvedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+    },
+    rejectedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "user",
+    },
     owner: {
         type: String,
         default: "autoexpress",
     },
-    approved: {
-        type: Boolean,
-        default: false,
+
+    status: {
+        type: String,
+        default: "pending",
+        enum: ["pending", "approved", "rejected"],
     },
+
     created_date: {
         type: Date,
         default: Date.now,

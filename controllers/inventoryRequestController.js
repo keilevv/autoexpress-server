@@ -38,7 +38,7 @@ exports.createRequest = async (req, res) => {
             materials,
             user: req.userId,
             owner: req.body.owner,
-            approved: false,
+            status: "pending",
             signature: req.body.signature,
         });
 
@@ -65,14 +65,17 @@ exports.indexInventoryRequests = async function (req, res) {
 
     let query = {};
     const filterArray = helpers.getFilterArray(filter);
-    query.archived = false;
+    const actingUser = await User.findById(req.userId);
+
+    if (!actingUser.roles.includes("admin")) {
+        query.archived = false;
+    }
 
     // Apply filtering if any
     if (filter) {
         filterArray.forEach(async (filterItem) => {
             switch (filterItem.name) {
                 case "archived":
-                    const actingUser = await User.findById(req.userId);
                     if (actingUser?.roles.includes("admin"))
                         query[filterItem.name] = filterItem.value === "true";
                     break;
@@ -88,8 +91,8 @@ exports.indexInventoryRequests = async function (req, res) {
                 case "user":
                     query["user"] = filterItem.value;
                     break;
-                case "approved":
-                    query["approved"] = filterItem.value === "true";
+                case "status":
+                    query["status"] = filterItem.value;
                     break;
                 default:
                     query[filterItem.name] = {
@@ -126,6 +129,8 @@ exports.indexInventoryRequests = async function (req, res) {
             .skip((page - 1) * limit)
             .limit(parseInt(limit))
             .populate({ path: "user", select: "-password" })
+            .populate({ path: "approvedBy", select: "-password" })
+            .populate({ path: "rejectedBy", select: "-password" })
             .populate("materials.material");
 
         return res.json({
@@ -142,67 +147,84 @@ exports.indexInventoryRequests = async function (req, res) {
 };
 
 exports.approveRequest = async (req, res) => {
+    const actingUser = await User.findById(req.userId);
+    if (!actingUser) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+    if (!actingUser.roles.includes("admin")) {
+        return res.status(403).json({ message: "Acceso denegado" });
+    }
+
     try {
-        const inventoryRequest = await InventoryRequest.findById(req.params.id);
+        const inventoryRequest = await InventoryRequest.findById(
+            req.params.request_id,
+        );
         if (!inventoryRequest) {
             return res.status(404).send({ message: "Solicitud no encontrada" });
         }
 
-        const materials = inventoryRequest.materials;
-        if (!materials || materials.length === 0)
+        if (inventoryRequest.status !== "pending") {
+            return res.status(400).send({ message: "Solicitud no está pendiente" });
+        }
+
+        const requestMaterials = inventoryRequest.materials;
+        if (!requestMaterials || requestMaterials.length === 0)
             return res
                 .status(400)
                 .send({ message: "Ningun material válido asignado" });
 
-        for (const material of materials) {
+        for (const reqMaterial of requestMaterials) {
             const storageMaterial = await StorageMaterial.findById(
-                material.material_id,
+                reqMaterial.material,
             );
             if (!storageMaterial) {
                 return res.status(404).send({ message: "Material no encontrado" });
             }
 
             const existingConsumptionMaterial = await ConsumptionMaterial.findOne({
-                material: material.material_id,
+                material: reqMaterial.material,
             });
 
             if (
                 existingConsumptionMaterial &&
                 !existingConsumptionMaterial.archived
             ) {
-                if (material.quantity > storageMaterial.quantity) {
+                if (reqMaterial.quantity > storageMaterial.quantity) {
                     return res
                         .status(400)
                         .send({ message: "No hay suficientes materiales" });
                 }
 
-                existingConsumptionMaterial.quantity += material.quantity;
-                storageMaterial.quantity -= material.quantity;
+                existingConsumptionMaterial.quantity += reqMaterial.quantity;
+                storageMaterial.quantity -= reqMaterial.quantity;
 
                 await existingConsumptionMaterial.save();
                 await storageMaterial.save();
+                inventoryRequest.status = "approved";
+                await inventoryRequest.save();
 
                 return res
                     .status(201)
                     .send({ message: "Materiales de consumo agregados exitosamente" });
             } else {
-                if (material.quantity > storageMaterial.quantity) {
+                if (reqMaterial.quantity > storageMaterial.quantity) {
                     return res
                         .status(400)
                         .send({ message: "No hay suficientes materiales" });
                 }
 
-                storageMaterial.quantity -= material.quantity;
+                storageMaterial.quantity -= reqMaterial.quantity;
                 await storageMaterial.save();
 
                 const consumptionMaterial = new ConsumptionMaterial({
-                    material: material.material_id,
-                    quantity: material.quantity,
-                    caution_quantity: material.caution_quantity,
+                    material: reqMaterial.material,
+                    quantity: reqMaterial.quantity,
+                    caution_quantity: reqMaterial.caution_quantity,
                 });
 
                 await consumptionMaterial.save();
-                inventoryRequest.approved = true;
+                inventoryRequest.status = "approved";
+                inventoryRequest.approvedBy = actingUser._id;
                 await inventoryRequest.save();
                 res.status(201).send({ message: "Solicitud aprobada exitosamente" });
             }
@@ -216,12 +238,36 @@ exports.approveRequest = async (req, res) => {
 
 exports.rejectRequest = async (req, res) => {
     try {
-        const inventoryRequest = await InventoryRequest.findById(req.params.id);
+        const actingUser = await User.findById(req.userId);
+        if (!actingUser) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+        if (!actingUser.roles.includes("admin")) {
+            return res.status(403).json({ message: "Acceso denegado" });
+        }
+        const inventoryRequest = await InventoryRequest.findById(
+            req.params.request_id,
+        );
         if (!inventoryRequest) {
             return res.status(404).send({ message: "Solicitud no encontrada" });
         }
 
-        inventoryRequest.approved = false;
+        if (inventoryRequest.archived) {
+            return res.status(400).send({ message: "Solicitud archivada" });
+        }
+
+        if (inventoryRequest.status === "rejected") {
+            return res
+                .status(400)
+                .send({ message: "Solicitud rechazada previamente" });
+        }
+        if (inventoryRequest.status === "approved") {
+            return res
+                .status(400)
+                .send({ message: "Solicitud aprobada previamente" });
+        }
+        inventoryRequest.rejectedBy = actingUser._id;
+        inventoryRequest.status = "rejected";
         await inventoryRequest.save();
         res.status(201).send({ message: "Solicitud rechazada exitosamente" });
     } catch (err) {
