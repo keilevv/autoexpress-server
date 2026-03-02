@@ -9,32 +9,37 @@ var jwt = require("jsonwebtoken");
 var bcrypt = require("bcrypt");
 
 exports.register = (req, res) => {
-  const user = new User({
-    username: req.body.username,
-    email: req.body.email,
-    password: bcrypt.hashSync(req.body.password, 8),
-    roles: req.body.roles,
-  });
-  user
-    .save()
-    .then((user) => {
-      user
-        .save()
-        .then((response) => {
-          res.send({ message: "User was registered successfully!" });
-          return;
-        })
-        .catch((err) => {
+  try {
+    const user = new User({
+      username: req.body.username,
+      email: req.body.email,
+      password: bcrypt.hashSync(req.body.password, 8),
+      roles: req.body.roles,
+    });
+    user
+      .save()
+      .then((user) => {
+        user
+          .save()
+          .then((response) => {
+            res.send({ message: "User was registered successfully!" });
+            return;
+          })
+          .catch((err) => {
+            res.status(500).send({ message: err });
+            return;
+          });
+      })
+      .catch((err) => {
+        if (err) {
           res.status(500).send({ message: err });
           return;
-        });
-    })
-    .catch((err) => {
-      if (err) {
-        res.status(500).send({ message: err });
-        return;
-      }
-    });
+        }
+      });
+  } catch (error) {
+    res.status(500).send({ message: error });
+    return;
+  }
 };
 
 exports.login = (req, res) => {
