@@ -2,6 +2,7 @@
 // Import Models
 JobOrder = require("../models/jobOrderModel");
 ConsumptionMaterial = require("../models/consumptionMaterialModel");
+StorageMaterial = require("../models/storageMaterialModel");
 
 const { helpers } = require("../utils/helpers");
 const mongoose = require("mongoose");
@@ -166,8 +167,26 @@ exports.index = async function (req, res) {
       return acc + materialsTotal + colorsTotal;
     }, 0);
 
-    /* ---------- 1️⃣ Total count ---------- */
+    /* ---------- 1️⃣ Total count and status counts ---------- */
     const totalCount = await JobOrder.countDocuments(query);
+
+    const statusCountsArr = await JobOrder.aggregate([
+      { $match: query },
+      { $unwind: "$status" },
+      { $group: { _id: "$status", count: { $sum: 1 } } },
+    ]);
+
+    const status_counts = {
+      pending: 0,
+      "in-progress": 0,
+      completed: 0,
+    };
+
+    statusCountsArr.forEach((item) => {
+      if (status_counts.hasOwnProperty(item._id)) {
+        status_counts[item._id] = item.count;
+      }
+    });
 
     /* ---------- 2️⃣ Fetch paginated job orders with populated refs ---------- */
     const jobOrders = await JobOrder.find(query)
@@ -176,19 +195,39 @@ exports.index = async function (req, res) {
         path: "consumed_materials.consumption_material", // consumptionMaterial
         populate: { path: "material", model: "StorageMaterial" }, // storageMaterial
       })
+      .populate({
+        path: "consumed_colors.consumption_material",
+        populate: { path: "material", model: "StorageMaterial" },
+      })
       .sort(sortOptions)
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
+      .lean()
       .exec();
+
+    const results = jobOrders.map((order) => {
+      return {
+        ...order,
+        consumed_colors: (order.consumed_colors || []).map((item) => {
+          return {
+            ...item,
+            quantity:
+              (item.quantity || 0) *
+              (item.consumption_material?.material?.normalized_weight || 1),
+          };
+        }),
+      };
+    });
 
     // total_price is already computed via aggregation above
 
     /* ---------- 4️⃣ Respond ---------- */
     return res.json({
       count: totalCount,
+      status_counts,
       total_price,
       message: "Job orders list retrieved successfully",
-      results: jobOrders,
+      results: results,
       status: "success",
     });
   } catch (err) {
@@ -249,6 +288,15 @@ exports.addConsumedMaterials = async (req, res) => {
         });
       }
 
+      const storageMaterial = await StorageMaterial.findById(
+        consumptionMaterial.material,
+      );
+
+      if (storageMaterial && storageMaterial.is_color) {
+        materialItem.quantity =
+          materialItem.quantity / storageMaterial.normalized_weight;
+      }
+
       // Find the material in the job order's consumed_materials list
       const existingMaterial = jobOrder.consumed_materials.find(
         (item) =>
@@ -277,13 +325,6 @@ exports.addConsumedMaterials = async (req, res) => {
         // Update the quantity in the consumed_materials array
         existingMaterial.quantity = materialItem.quantity;
       } else {
-        const storageMaterial = await StorageMaterial.findById(
-          consumptionMaterial.material,
-        );
-        if (storageMaterial.is_color && storageMaterial.unit === "litro") {
-          materialItem.quantity =
-            materialItem.quantity / storageMaterial.normalized_weight;
-        }
         if (consumptionMaterial.quantity < materialItem.quantity) {
           // If it's a new material, just add it to the consumed_materials array
           return res.status(400).send({
@@ -339,6 +380,21 @@ exports.addConsumedMaterials = async (req, res) => {
             message: `Material with ID ${colorItem.consumption_material} not found`,
           });
         }
+
+        const storageMaterial = await StorageMaterial.findById(
+          consumptionMaterial.material,
+        );
+
+        if (storageMaterial && storageMaterial.is_color) {
+          colorItem.quantity =
+            colorItem.quantity / storageMaterial.normalized_weight;
+        }
+
+        if (!storageMaterial.is_color) {
+          return res.status(400).send({
+            message: `Material with ID ${colorItem.consumption_material} is not a color`,
+          });
+        }
         const existingColor = jobOrder.consumed_colors.find(
           (item) =>
             item.consumption_material === colorItem.consumption_material,
@@ -363,13 +419,6 @@ exports.addConsumedMaterials = async (req, res) => {
           // Update the quantity in the consumed_materials array
           existingColor.quantity = colorItem.quantity;
         } else {
-          const storageMaterial = await StorageMaterial.findById(
-            consumptionMaterial.material,
-          );
-          if (storageMaterial.is_color && storageMaterial.unit === "litro") {
-            colorItem.quantity =
-              colorItem.quantity / storageMaterial.normalized_weight;
-          }
           if (consumptionMaterial.quantity < colorItem.quantity) {
             // If it's a new material, just add it to the consumed_materials array
             return res.status(400).send({
@@ -415,7 +464,7 @@ exports.addConsumedMaterials = async (req, res) => {
 };
 
 // Handle view jobOrder info
-exports.get = function (req, res) {
+exports.get = async function (req, res) {
   const jobOrderId = req.params.job_order_id;
   if (!mongoose.Types.ObjectId.isValid(jobOrderId)) {
     return res.status(400).send({ message: "Invalid jobOrder id" });
@@ -431,18 +480,42 @@ exports.get = function (req, res) {
       },
     })
     .lean()
-    .then((jobOrder) => {
+    .then(async (jobOrder) => {
       if (!jobOrder) {
         return res.status(404).send({ message: "JobOrder not found" });
       }
 
+      const consumedColors = await ConsumptionMaterial.find({
+        _id: {
+          $in: jobOrder.consumed_colors.map(
+            (item) => item.consumption_material,
+          ),
+        },
+      }).populate("material");
+
       const response = {
         ...jobOrder,
-        consumed_materials: jobOrder.consumed_materials.map((item) => ({
-          quantity: item.quantity,
-          consumption_material: item.consumption_material,
-          storage_material: item.consumption_material?.material || null,
-        })),
+        consumed_colors: jobOrder.consumed_colors.map((item) => {
+          return {
+            quantity:
+              item.quantity *
+              consumedColors.find(
+                (color) =>
+                  color._id.toString() === item.consumption_material.toString(),
+              ).material.normalized_weight,
+            consumption_material: item.consumption_material,
+            storage_material: item.material || null,
+            name: item.name,
+            price: item.price,
+          };
+        }),
+        consumed_materials: jobOrder.consumed_materials.map((item) => {
+          return {
+            quantity: item.quantity,
+            consumption_material: item.consumption_material,
+            storage_material: item.consumption_material?.material || null,
+          };
+        }),
       };
 
       return res.json({

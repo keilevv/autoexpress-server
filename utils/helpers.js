@@ -87,11 +87,6 @@ exports.helpers = {
       : parseFloat(num.toFixed(2)).toString();
   },
   getSortOptions(query = [], sortBy = "created_date", sortOrder = "desc") {
-    // Default filter to exclude completed
-    if (!query["status"]) {
-      query["status"] = { $ne: "completed" };
-    }
-
     // Optional: exclude records with missing created_date
     query["created_date"] = query["created_date"] || {};
     query["created_date"]["$exists"] = true;
