@@ -292,11 +292,7 @@ exports.addConsumedMaterials = async (req, res) => {
         consumptionMaterial.material,
       );
 
-      if (
-        storageMaterial &&
-        storageMaterial.is_color &&
-        storageMaterial.unit === "litro"
-      ) {
+      if (storageMaterial && storageMaterial.is_color) {
         materialItem.quantity =
           materialItem.quantity / storageMaterial.normalized_weight;
       }
