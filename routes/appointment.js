@@ -20,3 +20,4 @@ router.put("/update/:appointment_id", [authJwt.verifyToken], controller.update);
 router.delete("/delete-all", [authJwt.verifyToken], controller.deleteAll);
 
 module.exports = router;
+
