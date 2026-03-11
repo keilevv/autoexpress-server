@@ -469,66 +469,81 @@ exports.get = async function (req, res) {
   if (!mongoose.Types.ObjectId.isValid(jobOrderId)) {
     return res.status(400).send({ message: "Invalid jobOrder id" });
   }
-
-  JobOrder.findById(jobOrderId)
-    .populate("employee")
-    .populate({
-      path: "consumed_materials.consumption_material",
-      populate: {
-        path: "material",
-        model: "StorageMaterial",
-      },
-    })
-    .lean()
-    .then(async (jobOrder) => {
-      if (!jobOrder) {
-        return res.status(404).send({ message: "JobOrder not found" });
-      }
-
-      const consumedColors = await ConsumptionMaterial.find({
-        _id: {
-          $in: jobOrder.consumed_colors.map(
-            (item) => item.consumption_material,
-          ),
+  try {
+    JobOrder.findById(jobOrderId)
+      .populate("employee")
+      .populate({
+        path: "consumed_materials.consumption_material",
+        populate: {
+          path: "material",
+          model: "StorageMaterial",
         },
-      }).populate("material");
+      })
+      .lean()
+      .then(async (jobOrder) => {
+        if (!jobOrder) {
+          return res.status(404).send({ message: "JobOrder not found" });
+        }
 
-      const response = {
-        ...jobOrder,
-        consumed_colors: jobOrder.consumed_colors.map((item) => {
-          return {
-            quantity:
-              item.quantity *
-              consumedColors.find(
-                (color) =>
-                  color._id.toString() === item.consumption_material.toString(),
-              ).material.normalized_weight,
-            consumption_material: item.consumption_material,
-            storage_material: item.material || null,
-            name: item.name,
-            price: item.price,
-          };
-        }),
-        consumed_materials: jobOrder.consumed_materials.map((item) => {
-          return {
-            quantity: item.quantity,
-            consumption_material: item.consumption_material,
-            storage_material: item.consumption_material?.material || null,
-          };
-        }),
-      };
+        const consumedColors = await ConsumptionMaterial.find({
+          _id: {
+            $in: jobOrder.consumed_colors.map(
+              (item) => item.consumption_material,
+            ),
+          },
+        }).populate("material");
 
-      return res.json({
-        status: "success",
-        message: "JobOrder retrieved successfully",
-        results: response,
+        const response = {
+          ...jobOrder,
+          consumed_colors: jobOrder.consumed_colors.map((item) => {
+            let colorQuantity = 0;
+            if (item.consumption_material) {
+              colorQuantity =
+                item.quantity *
+                consumedColors.find((color) => {
+                  return (
+                    color._id.toString() ===
+                    item.consumption_material.toString()
+                  );
+                }).material.normalized_weight;
+            } else {
+              colorQuantity = item.quantity;
+            }
+            return {
+              quantity: colorQuantity,
+              consumption_material: item.consumption_material,
+              storage_material: item.material || null,
+              name: item.name,
+              price: item.price,
+            };
+          }),
+          consumed_materials: jobOrder.consumed_materials.map((item) => {
+            return {
+              quantity: item.quantity,
+              consumption_material: item.consumption_material,
+              storage_material: item.consumption_material?.material || null,
+            };
+          }),
+        };
+
+        return res.json({
+          status: "success",
+          message: "JobOrder retrieved successfully",
+          results: response,
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+        return res
+          .status(500)
+          .send({ message: "Internal server error", description: error });
       });
-    })
-    .catch((error) => {
-      return res
-        .status(500)
-        .send({ message: "Internal server error", description: error });
-    });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .send({ message: "Internal server error", description: error });
+  }
 };
 
 // Handle update car from id
