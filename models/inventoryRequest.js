@@ -12,15 +12,6 @@ var inventoryRequestSchema = mongoose.Schema({
     signature: {
         type: String,
         required: true,
-        validate: {
-            validator: (v) => {
-                return (
-                    /^data:image\/png;base64,.*$/.test(v) ||
-                    v.startsWith(R2_PUBLIC_BASE_URL)
-                );
-            },
-            message: "La firma debe ser una imagen en base64 o una URL de R2",
-        },
     },
     materials: [
         {
