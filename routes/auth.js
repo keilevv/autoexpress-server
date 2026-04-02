@@ -9,11 +9,18 @@ router.post(
   [verifyRegister.checkDuplicateUsernameOrEmail],
   controller.register
 );
-router.post(
-  "/login",
-  passport.authenticate("local", { session: false }),
-  controller.login
-);
+router.post("/login", (req, res, next) => {
+  passport.authenticate("local", { session: false }, (err, user, info) => {
+    if (err) {
+      return res.status(500).json({ message: "Internal server error" });
+    }
+    if (!user) {
+      return res.status(401).json({ message: info.message });
+    }
+    req.user = user;
+    next();
+  })(req, res, next);
+}, controller.login);
 router.get("/:userId", controller.makeAuth);
 
 module.exports = router;

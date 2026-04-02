@@ -173,13 +173,25 @@ exports.approveRequest = async (req, res) => {
                 .status(400)
                 .send({ message: "Ningun material válido asignado" });
 
+        // First pass: Validation
+        const updates = [];
         for (const reqMaterial of requestMaterials) {
-            const storageMaterial = await StorageMaterial.findById(
-                reqMaterial.material,
-            );
+            const storageMaterial = await StorageMaterial.findById(reqMaterial.material);
             if (!storageMaterial) {
                 return res.status(404).send({ message: "Material no encontrado" });
             }
+
+            if (reqMaterial.quantity > storageMaterial.quantity) {
+                return res
+                    .status(400)
+                    .send({ message: `No hay suficientes materiales para: ${storageMaterial.name}` });
+            }
+            updates.push({ storageMaterial, reqMaterial });
+        }
+
+        // Second pass: Execution
+        for (const update of updates) {
+            const { storageMaterial, reqMaterial } = update;
 
             const existingConsumptionMaterial = await ConsumptionMaterial.findOne({
                 material: reqMaterial.material,
@@ -189,46 +201,29 @@ exports.approveRequest = async (req, res) => {
                 existingConsumptionMaterial &&
                 !existingConsumptionMaterial.archived
             ) {
-                if (reqMaterial.quantity > storageMaterial.quantity) {
-                    return res
-                        .status(400)
-                        .send({ message: "No hay suficientes materiales" });
-                }
-
                 existingConsumptionMaterial.quantity += reqMaterial.quantity;
                 storageMaterial.quantity -= reqMaterial.quantity;
 
                 await existingConsumptionMaterial.save();
                 await storageMaterial.save();
-                inventoryRequest.status = "approved";
-                await inventoryRequest.save();
-
-                return res
-                    .status(201)
-                    .send({ message: "Materiales de consumo agregados exitosamente" });
             } else {
-                if (reqMaterial.quantity > storageMaterial.quantity) {
-                    return res
-                        .status(400)
-                        .send({ message: "No hay suficientes materiales" });
-                }
-
                 storageMaterial.quantity -= reqMaterial.quantity;
                 await storageMaterial.save();
 
                 const consumptionMaterial = new ConsumptionMaterial({
                     material: reqMaterial.material,
                     quantity: reqMaterial.quantity,
-                    caution_quantity: reqMaterial.caution_quantity,
+                    caution_quantity: storageMaterial.caution_quantity,
                 });
 
                 await consumptionMaterial.save();
-                inventoryRequest.status = "approved";
-                inventoryRequest.approvedBy = actingUser._id;
-                await inventoryRequest.save();
-                res.status(201).send({ message: "Solicitud aprobada exitosamente" });
             }
         }
+
+        inventoryRequest.status = "approved";
+        inventoryRequest.approvedBy = actingUser._id;
+        await inventoryRequest.save();
+        res.status(201).send({ message: "Solicitud aprobada exitosamente" });
     } catch (err) {
         res
             .status(500)
