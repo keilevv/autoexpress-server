@@ -17,6 +17,8 @@ exports.register = async (req, res) => {
     let price = req.body.price;
     let owner = req.body.owner;
     let caution_quantity = req.body.caution_quantity;
+    let is_color = req.body.is_color;
+    let normalized_weight = req.body.normalized_weight;
     quantity = Number(quantity);
     price = Number(price);
 
@@ -27,7 +29,9 @@ exports.register = async (req, res) => {
       typeof quantity !== "number" ||
       typeof price !== "number" ||
       typeof owner !== "string" ||
-      typeof caution_quantity !== "number"
+      typeof caution_quantity !== "number" ||
+      typeof is_color !== "boolean" ||
+      typeof normalized_weight !== "number"
     ) {
       return res.status(400).json({ error: "Invalid data format." });
     }
@@ -44,6 +48,8 @@ exports.register = async (req, res) => {
       price: price,
       owner: owner ? owner : "autoexpress",
       caution_quantity: caution_quantity ? caution_quantity : 0,
+      is_color: is_color ? is_color : false,
+      normalized_weight: normalized_weight ? normalized_weight : 0,
     });
 
     storageMaterial.save().then((material) => {
