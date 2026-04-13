@@ -30,8 +30,7 @@ exports.register = async (req, res) => {
       typeof price !== "number" ||
       typeof owner !== "string" ||
       typeof caution_quantity !== "number" ||
-      typeof is_color !== "boolean" ||
-      typeof normalized_weight !== "number"
+      (is_color && typeof normalized_weight !== "number")
     ) {
       return res.status(400).json({ error: "Invalid data format." });
     }
@@ -325,6 +324,7 @@ exports.uploadStorageMaterials = (req, res) => {
   });
 
   return res.status(200).json({
-    message: "Su archivo está siendo procesado. Le notificaremos cuando se complete la operación.",
+    message:
+      "Su archivo está siendo procesado. Le notificaremos cuando se complete la operación.",
   });
 };
