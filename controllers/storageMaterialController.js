@@ -305,4 +305,26 @@ exports.deleteAll = function (req, res) {
 };
 
 // Controller to upload and process the CSV file
-exports.uploadStorageMaterials = (req, res) => { };
+const csvUploadQueue = require("../utils/csvUploadQueue");
+
+exports.uploadStorageMaterials = (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded." });
+  }
+
+  const userId = req.userId;
+  const bufferString = req.file.buffer.toString();
+
+  // Push to queue
+  csvUploadQueue.push({ bufferString, userId }, (err, result) => {
+    if (err) {
+      console.error("Queue Task Error", err);
+    } else {
+      console.log("Queue Task Completed", result.length);
+    }
+  });
+
+  return res.status(200).json({
+    message: "Su archivo está siendo procesado. Le notificaremos cuando se complete la operación.",
+  });
+};
