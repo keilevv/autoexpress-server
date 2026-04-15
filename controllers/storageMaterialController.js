@@ -19,6 +19,8 @@ exports.register = async (req, res) => {
     let caution_quantity = req.body.caution_quantity;
     let is_color = req.body.is_color;
     let normalized_weight = req.body.normalized_weight;
+    let quantity_in_grams = req.body.quantity_in_grams;
+    let is_gram_consumed = req.body.is_gram_consumed;
     quantity = Number(quantity);
     price = Number(price);
 
@@ -30,7 +32,8 @@ exports.register = async (req, res) => {
       typeof price !== "number" ||
       typeof owner !== "string" ||
       typeof caution_quantity !== "number" ||
-      (is_color && typeof normalized_weight !== "number")
+      (is_color && typeof normalized_weight !== "number") ||
+      (is_gram_consumed && typeof normalized_weight !== "number")
     ) {
       return res.status(400).json({ error: "Invalid data format." });
     }
@@ -49,6 +52,8 @@ exports.register = async (req, res) => {
       caution_quantity: caution_quantity ? caution_quantity : 0,
       is_color: is_color ? is_color : false,
       normalized_weight: normalized_weight ? normalized_weight : 0,
+      quantity_in_grams: quantity_in_grams ? quantity_in_grams : 0,
+      is_gram_consumed: is_gram_consumed ? is_gram_consumed : false,
     });
 
     storageMaterial.save().then((material) => {
@@ -82,6 +87,10 @@ exports.index = async function (req, res) {
         case "archived":
           const archived = filterItem.value === "true" ? true : false;
           query[filterItem.name] = archived;
+          break;
+        case "is_gram_consumed":
+          const isGramConsumed = filterItem.value === "true" ? true : false;
+          query[filterItem.name] = isGramConsumed;
           break;
         case "start_date":
         case "end_date":
@@ -220,10 +229,10 @@ exports.update = function (req, res) {
           switch (key) {
             case "normalized_weight":
               const normalized_weight = Number(req.body[key]);
-              if (!material.is_color) {
+              if (!material.is_color && !material.is_gram_consumed) {
                 return res.status(400).send({
                   message:
-                    "No se puede actualizar el peso normalizado de un material que no es color",
+                    "No se puede actualizar el peso normalizado de un material que no es color ni consumido por gramos",
                 });
               }
               if (normalized_weight <= 0) {
@@ -234,7 +243,11 @@ exports.update = function (req, res) {
               material[key] = normalized_weight;
               break;
             case "is_color":
+            case "is_gram_consumed":
               material[key] = req.body[key];
+              break;
+            case "quantity_in_grams":
+              material[key] = Number(req.body[key]);
               break;
             default:
               material[key] = req.body[key];
