@@ -17,7 +17,14 @@ var storageMaterialSchema = mongoose.Schema({
   unit: {
     type: String,
     required: true,
-    enum: ["kg", "litro", "unit", "galon", "0.5L", "1L", "3.5L"],
+    enum: ["kg", "litro", "unit", "galon", "0.5L", "1L", "3.5L", "gramo"],
+  },
+  quantity_in_grams: {
+    type: Number,
+  },
+  is_gram_consumed: {
+    type: Boolean,
+    default: false,
   },
   // this is the weight of the material of 1kg or 1 liter or 1 unit or 1 galon
   normalized_weight: {

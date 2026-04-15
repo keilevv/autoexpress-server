@@ -21,6 +21,7 @@ const settingsRoutes = require("./routes/settings");
 const productionRoutes = require("./routes/production");
 const builderbotRoutes = require("./routes/builderbot");
 const dashboardRoutes = require("./routes/dashboard");
+const notificationRoutes = require("./routes/notification");
 
 const app = express();
 
@@ -72,6 +73,7 @@ app.use("/api/settings", settingsRoutes);
 app.use("/api/production", productionRoutes);
 app.use("/api/builderbot", builderbotRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/notifications", notificationRoutes);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   const err = new Error("Not Found");

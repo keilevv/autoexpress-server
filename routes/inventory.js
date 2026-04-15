@@ -4,6 +4,9 @@ const storageMaterialController = require("../controllers/storageMaterialControl
 const consumptionMaterialController = require("../controllers/consumptionMaterialController");
 const saleController = require("../controllers/saleController");
 const inventoryRequestController = require("../controllers/inventoryRequestController");
+const multer = require("multer");
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 const router = express.Router();
 
 router.get(
@@ -35,7 +38,7 @@ router.delete(
 
 router.post(
   "/operations/load-storage-materials",
-  [authJwt.verifyToken],
+  [authJwt.verifyToken, upload.single("file")],
   storageMaterialController.uploadStorageMaterials,
 );
 /*WARNING: This will delete all materials, use only on dev environment */
