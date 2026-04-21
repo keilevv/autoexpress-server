@@ -24,22 +24,12 @@ exports.register = async (req, res) => {
     quantity = Number(quantity);
     price = Number(price);
 
-    if (
-      typeof name !== "string" ||
-      typeof reference !== "string" ||
-      typeof unit !== "string" ||
-      typeof quantity !== "number" ||
-      typeof price !== "number" ||
-      typeof owner !== "string" ||
-      typeof caution_quantity !== "number" ||
-      (is_color && typeof normalized_weight !== "number") ||
-      (is_gram_consumed && typeof normalized_weight !== "number")
-    ) {
-      return res.status(400).json({ error: "Invalid data format." });
-    }
-
     if (!price) {
       price = 0;
+    }
+
+    if (is_gram_consumed && normalized_weight > 0) {
+      quantity = quantity_in_grams / normalized_weight;
     }
 
     const storageMaterial = new StorageMaterial({
@@ -70,6 +60,41 @@ exports.register = async (req, res) => {
       res.status(500).send({ message: err });
       return;
     }
+  }
+};
+
+exports.indexSimulation = async function (req, res) {
+  const { ...filter } = req.query;
+  let query = {};
+
+  const filterArray = helpers.getFilterArray(filter);
+
+  if (filter) {
+    filterArray.forEach((filterItem) => {
+      switch (filterItem.name) {
+        case "archived":
+          const archived = filterItem.value === "true" ? true : false;
+          query[filterItem.name] = archived;
+          break;
+        case "owner":
+          query[filterItem.name] = filterItem.value;
+          break;
+        default:
+          break;
+      }
+    });
+  }
+
+  try {
+    const results = await StorageMaterial.find(query).sort({ name: 1 });
+
+    return res.json({
+      status: "success",
+      message: "Materials list for simulation retrieved successfully",
+      results,
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Internal server error", description: err });
   }
 };
 
@@ -253,6 +278,11 @@ exports.update = function (req, res) {
               material[key] = req.body[key];
               break;
           }
+        }
+
+        if (material.is_gram_consumed && material.normalized_weight > 0) {
+          material.quantity =
+            (material.quantity_in_grams || 0) / material.normalized_weight;
         }
 
         // save the material and check for errors

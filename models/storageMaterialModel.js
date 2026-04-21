@@ -32,7 +32,6 @@ var storageMaterialSchema = mongoose.Schema({
   },
   quantity: {
     type: Number,
-    required: true,
   },
   caution_quantity: {
     type: Number,

@@ -16,6 +16,12 @@ router.get(
 );
 
 router.get(
+  "/operations/storage-simulation",
+  [authJwt.verifyToken],
+  storageMaterialController.indexSimulation,
+);
+
+router.get(
   "/operations/storage/:material_id",
   [authJwt.verifyToken],
   storageMaterialController.get,
