@@ -4,10 +4,23 @@ const storageMaterialController = require("../controllers/storageMaterialControl
 const consumptionMaterialController = require("../controllers/consumptionMaterialController");
 const saleController = require("../controllers/saleController");
 const inventoryRequestController = require("../controllers/inventoryRequestController");
+const dischargeController = require("../controllers/dischargeController");
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const router = express.Router();
+
+router.post(
+  "/operations/discharge",
+  [authJwt.verifyToken],
+  dischargeController.register,
+);
+
+router.get(
+  "/operations/discharges",
+  [authJwt.verifyToken],
+  dischargeController.index,
+);
 
 router.get(
   "/operations/storage",

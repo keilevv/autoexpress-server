@@ -260,7 +260,7 @@ exports.update = function (req, res) {
                     "No se puede actualizar el peso normalizado de un material que no es color ni consumido por gramos",
                 });
               }
-              if (normalized_weight <= 0) {
+              if (normalized_weight < 0) {
                 return res
                   .status(400)
                   .send({ message: "Peso normalizado inválido" });
