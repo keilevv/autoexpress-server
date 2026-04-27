@@ -79,6 +79,16 @@ exports.indexSimulation = async function (req, res) {
         case "owner":
           query[filterItem.name] = filterItem.value;
           break;
+        case "is_gram_consumed":
+          const isGramConsumed = filterItem.value === "true" ? true : false;
+          query[filterItem.name] = isGramConsumed;
+          break;
+        case "search":
+          query["$or"] = [
+            { name: { $regex: filterItem.value, $options: "i" } },
+            { reference: { $regex: filterItem.value, $options: "i" } },
+          ];
+          break;
         default:
           break;
       }
@@ -86,11 +96,33 @@ exports.indexSimulation = async function (req, res) {
   }
 
   try {
-    const results = await StorageMaterial.find(query).sort({ name: 1 });
+    const data = await StorageMaterial.aggregate([
+      { $match: query },
+      {
+        $facet: {
+          results: [{ $sort: { name: 1 } }],
+          totalPrice: [
+            {
+              $group: {
+                _id: null,
+                total: {
+                  $sum: { $multiply: ["$price", "$quantity"] },
+                },
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    const results = data[0].results;
+    const totalPrice =
+      data[0].totalPrice.length > 0 ? data[0].totalPrice[0].total : 0;
 
     return res.json({
       status: "success",
       message: "Materials list for simulation retrieved successfully",
+      total_price: totalPrice,
       results,
     });
   } catch (err) {
